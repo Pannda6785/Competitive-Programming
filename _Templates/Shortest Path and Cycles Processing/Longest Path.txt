@@ -1,0 +1,66 @@
+// uses Bellman, directed weighted graph, longest path from 1 to n, or determine arbitrary large
+
+const long long INF = 3e18;
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+
+    vector<array<int, 3>> edges(m);
+    vector<vector<int>> adj(n);
+    for (int i = 0; i < m; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        u--;
+        v--;
+        edges[i] = { u, v, w };
+        adj[v].push_back(u);
+    }
+
+    vector<long long> dist(n, -INF);
+    dist[0] = 0;
+    int ite = 0;
+    while (ite < n - 1) {
+        bool run = false;
+        ite++;
+        for (array<int, 3> e : edges) {
+            int u = e[0], v = e[1], w = e[2];
+            if (dist[u] == -INF) continue;
+            if (dist[u] + w > dist[v]) {
+                run = true;
+                dist[v] = dist[u] + w;
+            }
+        }
+        if (!run) break;
+    }
+
+    vector<bool> bad(n, false);
+    for (array<int, 3> e : edges) {
+        int u = e[0], v = e[1], w = e[2];
+        if (dist[u] == -INF) continue;
+        if (dist[u] + w > dist[v]) {
+            bad[v] = true;
+        }
+    }
+
+    queue<int> que;
+    vector<bool> vis(n, false);
+    vis[n - 1] = true;
+    que.push(n - 1);
+    while (!que.empty()) {
+        int u = que.front();
+        que.pop();
+        if (bad[u]) {
+            cout << -1 << '\n';
+            return 0;
+        }
+        for (int v : adj[u]) {
+            if (!vis[v]) {
+                vis[v] = true;
+                que.push(v);
+            }
+        }
+    }
+
+    cout << dist[n - 1] << '\n';
+}

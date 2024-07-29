@@ -1,0 +1,53 @@
+mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+const int X0 = vector<int>{29, 31, 37, 41}[rng() % 4];
+
+struct Hash {
+    const int X = X0;
+    const int P = (int)1e9 + 7;
+
+    string s;
+    int n;
+    vector<long long> hsh1, hsh2;
+    vector<long long> power1, power2;
+
+    Hash(string s) : s(s), n(s.length()), hsh1(n + 1), hsh2(n + 1), power1(n + 1), power2(n + 1) {
+        hsh1[0] = hsh2[0] = 0;
+        power1[0] = power2[0] = 1;
+        for (int i = 0; i < n; i++) {
+            int c = s[i] - 'a' + 1;
+            hsh1[i + 1] = (hsh1[i] * X + c) % P;
+            hsh2[i + 1] = hsh2[i] * X + c;
+            power1[i + 1] = power1[i] * X % P;
+            power2[i + 1] = power2[i] * X;
+        }
+    }
+
+    void push_back(char ch) {
+        int c = ch - 'a' + 1;
+        s.push_back(ch);
+        n++;
+        hsh1.push_back((hsh1.back() * X + c) % P);
+        hsh2.push_back(hsh2.back() * X + c);
+        power1.push_back(power1.back() * X % P);
+        power2.push_back(power2.back() * X);
+    }
+
+    void pop_back() {
+        s.pop_back();
+        n--;
+        hsh1.pop_back();
+        hsh2.pop_back();
+        power1.pop_back();
+        power2.pop_back();
+    }
+
+    array<long long, 2> get(int l, int r) {
+        long long h1 = (hsh1[r] - hsh1[l] * power1[r - l] % P + P) % P;
+        long long h2 = hsh2[r] - hsh2[l] * power2[r - l];
+        return array<long long, 2>{h1, h2};
+    }
+
+    array<long long, 2> get() {
+        return array<long long, 2>{hsh1[n], hsh2[n]};
+    }
+};

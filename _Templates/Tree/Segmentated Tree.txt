@@ -1,0 +1,96 @@
+struct Tree {
+    int log, idx;
+    vector<int> depth;
+    vector<vector<int>> lift;
+    vector<vector<int>> f;
+    vector<array<int, 2>> edges;
+
+    Tree(int n, vector<vector<int>> &adj, int root = 0) : log(32 - __builtin_clz(n)), idx(0), depth(n), lift(n, vector<int>(log, -1)), f(n, vector<int>(log, -1)) {
+        auto dfs = [&](auto self, int u, int p) -> void {
+            for (int v : adj[u]) {
+                if (v == p) continue;
+                depth[v] = depth[u] + 1;
+                lift[v][0] = u;
+                f[v][0] = idx++;
+                for (int i = 1; i < log; i++) {
+                    int w = lift[v][i - 1];
+                    if (w != -1) {
+                        lift[v][i] = lift[w][i - 1];
+                        if (f[w][i - 1] != -1) f[v][i] = idx++;
+                        if (f[w][i - 1] != -1) edges.push_back({f[v][i], f[v][i - 1]});
+                        if (f[w][i - 1] != -1) edges.push_back({f[v][i], f[w][i - 1]});
+                    }
+                }
+                self(self, v, u);
+            }
+        };
+        depth[root] = 0;
+        f[root][0] = idx++;
+        dfs(dfs, root, -1);
+    }
+
+    int count() {
+        return idx;
+    }
+
+    vector<array<int, 2>> getEdges() {
+        return edges;
+    }
+
+    int getNode(int u) {
+        return f[u][0];
+    }
+
+    vector<int> getPath(int u, int v) {
+        vector<int> res;
+        if (depth[u] > depth[v]) swap(u, v);
+        for (int i = log - 1; i >= 0; i--) {
+            int w = lift[v][i];
+            if (w != -1 && depth[w] >= depth[u]) {
+                res.push_back(f[v][i]);
+                v = w;
+            }
+        }
+        if (u == v) {
+            res.push_back(f[u][0]);
+            return res;
+        }
+        for (int i = log - 1; i >= 0; i--) {
+            if (lift[u][i] != lift[v][i]) {
+                res.push_back(f[u][i]);
+                res.push_back(f[v][i]);
+                u = lift[u][i];
+                v = lift[v][i];
+            }
+        }
+        res.push_back(f[u][1]);
+        res.push_back(f[v][0]);
+        return res;
+    }
+
+    int lca(int u, int v) {
+        if (depth[u] > depth[v]) swap(u, v);
+        for (int i = log - 1; i >= 0; i--) {
+            int w = lift[v][i];
+            if (w != -1 && depth[w] >= depth[u]) v = w;
+        }
+        if (u == v) return u;
+        for (int i = log - 1; i >= 0; i--) {
+            if (lift[u][i] != lift[v][i]) {
+                u = lift[u][i];
+                v = lift[v][i];
+            }
+        }
+        return lift[u][0];
+    }
+
+    int getIntermediate(int s, int t) { // not to take s == t
+        int m = lca(s, t);
+        if (s != m) return lift[s][0];
+        for (int i = log - 1; i >= 0; i--) {
+            int w = lift[t][i];
+            if (w != -1 && depth[w] > depth[s]) t = w;
+        }
+        return t;
+    }
+};

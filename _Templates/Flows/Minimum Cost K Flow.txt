@@ -1,0 +1,81 @@
+template <class Tcapa, class Tcost>
+struct Flows {
+    const Tcapa INFcapa = numeric_limits<Tcapa>::max() / 2;
+    const Tcost INFcost = numeric_limits<Tcost>::max() / 2;
+    struct Edge {
+        int u, v;
+        Tcapa capacity;
+        Tcost cost;
+        Tcapa flowed;
+        Edge(int u, int v, Tcapa capacity, Tcost cost, Tcapa flowed) : u(u), v(v), capacity(capacity), cost(cost), flowed(flowed) {}
+    };
+
+    int n, m;
+    vector<Edge> edges;
+    vector<vector<int>> adj;
+    vector<Tcost> dist;
+    vector<int> ptr;
+
+    Flows(int n) : n(n), m(0), adj(n), dist(n), ptr(n) {}
+
+    int addEdge(int u, int v, Tcapa capacity, Tcost cost) {
+        edges.push_back(Edge(u, v, capacity, cost, 0));
+        edges.push_back(Edge(v, u, 0, -cost, 0));
+        adj[u].push_back(m);
+        adj[v].push_back(m + 1);
+        m += 2;
+        return m - 2;
+    }
+
+    bool dijkstra(int s, int t) {
+        fill(dist.begin(), dist.end(), -1);
+        priority_queue<pair<Tcost, int>, vector<pair<Tcost, int>>, greater<>> pq;
+        dist[s] = 0;
+        pq.push({dist[s], s});
+        while (!pq.empty()) {
+            auto [d, u] = pq.top();
+            pq.pop();
+            if (d != dist[u]) continue;
+            for (int i : adj[u]) {
+                auto [_u, v, capacity, cost, flowed] = edges[i];
+                if (capacity - flowed == 0) continue;
+                if (dist[v] == -1 || dist[u] + cost < dist[v]) {
+                    dist[v] = dist[u] + cost;
+                    pq.push({dist[v], v});
+                }
+            }
+        }
+        return dist[t] != -1;
+    }
+
+    Tcapa dfs(int u, int t, Tcapa pushed) {
+        if (u == t || pushed == 0) {
+            return pushed;
+        }
+        for (int &ii = ptr[u]; ii < adj[u].size(); ) {
+            int i = adj[u][ii++];
+            auto [_u, v, capacity, cost, flowed] = edges[i];
+            if (capacity - flowed == 0) continue;
+            if (dist[v] != dist[u] + cost) continue;
+            Tcapa push = min(pushed, capacity - flowed);
+            push = dfs(v, t, push);
+            if (push) {
+                edges[i].flowed += push;
+                edges[i ^ 1].flowed -= push;
+                return push;
+            }
+        }
+        return 0;
+    }
+
+    Tcost minCostKFlows(int s, int t) {
+        Tcost min_cost = 0;
+        while (dijkstra(s, t)) {
+            fill(ptr.begin(), ptr.end(), 0);
+            while (Tcapa flowed = dfs(s, t, INFcapa)) {
+                min_cost += dist[t] * flowed;
+            }
+        }
+        return min_cost;
+    }
+};

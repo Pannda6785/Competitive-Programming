@@ -1,0 +1,74 @@
+// segment add min get, returns INF if no segment presents at x
+
+const long long INF = (long long)4e18;
+
+typedef complex<long long> point;
+long long dot(point a, point b) {
+    return (conj(a) * b).real();
+}
+
+struct Segment {
+    int l, r;
+    point p;
+};
+
+struct LiChao { // [l, r]
+    int C;
+    vector<int> dom;
+    vector<point> st;
+
+    LiChao(vector<int> _dom) : dom(_dom) {
+        sort(dom.begin(), dom.end());
+        dom.resize(unique(dom.begin(), dom.end()) - dom.begin());
+        C = dom.size();
+        st.resize(4 * C, point(0, INF));
+    }
+
+    long long f(point p, int x) {
+        return dot(p, point(dom[x], 1));
+    }
+
+    void add(point p, int idx, int l, int r) {
+        int m = (l + r) >> 1;
+        bool domm = f(p, m) < f(st[idx], m);
+        bool doml = f(p, l) < f(st[idx], l);
+        if (domm) swap(p, st[idx]);
+        if (l < r) {
+            int m = (l + r) >> 1;
+            if (domm != doml) add(p, 2 * idx + 1, l, m);
+            else add(p, 2 * idx + 2, m + 1, r);
+        }
+    }
+
+    void decompose(int ql, int qr, point p, int idx, int l, int r) {
+        if (dom[r] < ql || qr < dom[l]) return;
+        if (ql <= dom[l] && dom[r] <= qr) {
+            add(p, idx, l, r);
+            return;
+        }
+        int m = (l + r) >> 1;
+        decompose(ql, qr, p, 2 * idx + 1, l, m);
+        decompose(ql, qr, p, 2 * idx + 2, m + 1, r);
+    }
+
+    long long favor;
+    void touch(int x, int idx, int l, int r) {
+        favor = min(favor, f(st[idx], x));
+        if (l < r) {
+            int m = (l + r) >> 1;
+            if (x <= m) touch(x, 2 * idx + 1, l, m);
+            else touch(x, 2 * idx + 2, m + 1, r);
+        }
+    }
+
+    void add(Segment seg) {
+        decompose(seg.l, seg.r, seg.p, 0, 0, C - 1);
+    }
+
+    long long getMin(int x) {
+        x = lower_bound(dom.begin(), dom.end(), x) - dom.begin();
+        favor = INF;
+        touch(x, 0, 0, C - 1);
+        return favor;
+    }
+};

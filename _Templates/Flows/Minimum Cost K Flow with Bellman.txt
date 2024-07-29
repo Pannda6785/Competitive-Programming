@@ -1,0 +1,84 @@
+template <class T>
+struct Flow {
+    const T INF = numeric_limits<T>::max() / 2;
+
+    struct Edge {
+        int u, v;
+        T capacity, cost, flowed;
+    };
+    int n, m;
+    vector<Edge> edges;
+    vector<vector<int>> adj;
+    vector<int> par;
+
+    Flow(int n) : n(n), m(0), adj(n), par(n) {}
+
+    int addEdge(int u, int v, T capacity, T cost) {
+        adj[u].push_back(m);
+        edges.push_back({ u, v, capacity, cost, 0 });
+        adj[v].push_back(m + 1);
+        edges.push_back({ v, u, 0, -cost, 0 });
+        m += 2;
+        return m - 2;
+    }
+
+    T bfs(int s, int t) {
+        fill(par.begin(), par.end(), -1);
+        vector<T> dist(n, -1);
+        queue<int> que;
+        vector<bool> in_queue(n, false);
+        dist[s] = 0;
+        que.push(s);
+        in_queue[s] = true;
+        while (!que.empty()) {
+            int u = que.front();
+            que.pop();
+            in_queue[u] = false;
+            for (int i : adj[u]) {
+                auto [_u, v, capacity, cost, flowed] = edges[i];
+                if (capacity - flowed < 1) continue;
+                if (dist[v] == -1 || dist[u] + cost < dist[v]) {
+                    dist[v] = dist[u] + cost;
+                    par[v] = i;
+                    if (!in_queue[v]) {
+                        que.push(v);
+                        in_queue[v] = true;
+                    }
+                }
+            }
+        }
+        return dist[t];
+    }
+
+    T minCostKFlow(int s, int t, T k) {
+        T min_cost = 0;
+        while (k > 0) {
+            T cost = bfs(s, t);
+            if (cost == -1) break;
+
+            T push = k;
+
+            int v = t;
+            while (par[v] != -1) {
+                int i = par[v];
+                auto [u, _v, capacity, cost, flowed] = edges[i];
+                push = min(push, capacity - flowed);
+                v = u;
+            }
+
+            v = t;
+            while (par[v] != -1) {
+                int i = par[v];
+                auto [u, _v, capacity, cost, flowed] = edges[i];
+                edges[i].flowed += push;
+                edges[i ^ 1].flowed -= push;
+                v = u;
+            }
+
+            min_cost += cost * push;
+            k -= push;
+        }
+        if (k > 0) return -1;
+        return min_cost;
+    }
+};

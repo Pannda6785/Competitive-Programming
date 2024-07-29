@@ -1,0 +1,53 @@
+// line add min get, returns INF if no line added
+
+template <class T>
+struct LiChao {
+    const T INF = numeric_limits<T>::max() / 2;
+
+    int C;
+    vector<T> dom;
+    vector<array<T, 2>> first;
+    vector<int> label;
+
+    T f(array<T, 2> p, int x) {
+        return p[0] * dom[x] + p[1];
+    }
+
+    LiChao(vector<T> _dom) : dom(_dom) {
+        sort(dom.begin(), dom.end());
+        dom.resize(unique(dom.begin(), dom.end()) - dom.begin());
+        C = dom.size();
+        first.resize(4 * C, make_pair(0, INF));
+        label.resize(4 * C, -1);
+    }
+
+    void add(T a, T b, int lab) {
+        array<T, 2> p{a, b};
+        int idx = 0, l = 0, r = C;
+        while (l < r) {
+            int m = (l + r) >> 1;
+            bool doml = f(p, l) < f(first[idx], l);
+            bool domm = f(p, m) < f(first[idx], m);
+            if (domm) swap(p, first[idx]), swap(label[idx], lab);
+            if (l + 1 == r) break;
+            if (doml != domm) idx = 2 * idx + 1, r = m;
+            else idx = 2 * idx + 2, l = m;
+        }
+    }
+
+    pair<T, int> getMin(T x) {
+//        x -= 1e-9;
+        x = lower_bound(dom.begin(), dom.end(), x) - dom.begin();
+        T mn = INF;
+        int lab = -1;
+        int idx = 0, l = 0, r = C;
+        while (l < r) {
+            if (f(first[idx], x) < mn) mn = f(first[idx], x), lab = label[idx];
+            if (l + 1 == r) break;
+            int m = (l + r) >> 1;
+            if (x < m) idx = 2 * idx + 1, r = m;
+            else idx = 2 * idx + 2, l = m;
+        }
+        return make_pair(mn, lab);
+    }
+};

@@ -1,0 +1,57 @@
+const int INF = (int)1e9 + 12345;
+
+struct RectUnionArea {
+    struct Node {
+        int sum = 0, paint = 0;
+        int ln = -1, rn = -1;
+    };
+    int CL, CR;
+    vector<Node> nodes;
+
+    RectUnionArea() : CL(INF), CR(-INF), nodes(1) {}
+
+    void add(int ql, int qr, int delta, int &idx, int l, int r) {
+        if (r <= ql || qr <= l) {
+            return;
+        }
+        if (idx == -1) {
+            idx = nodes.size();
+            nodes.push_back(Node());
+        }
+        if (ql <= l && r <= qr) {
+            nodes[idx].paint += delta;
+            nodes[idx].sum = nodes[idx].paint > 0 ? r - l : (nodes[idx].ln == -1 ? 0 : nodes[nodes[idx].ln].sum) + (nodes[idx].rn == -1 ? 0 : nodes[nodes[idx].rn].sum);
+            return;
+        }
+        int m = (l + r) >> 1;
+        Node goat = nodes[idx];
+        add(ql, qr, delta, goat.ln, l, m);
+        add(ql, qr, delta, goat.rn, m, r);
+        nodes[idx] = goat;
+        nodes[idx].sum = nodes[idx].paint > 0 ? r - l : (nodes[idx].ln == -1 ? 0 : nodes[nodes[idx].ln].sum) + (nodes[idx].rn == -1 ? 0 : nodes[nodes[idx].rn].sum);
+    }
+
+    void add(int ql, int qr, int delta) { int goat = 0; add(ql, qr, delta, goat, CL, CR); }
+    int sum() { return nodes[0].sum; }
+
+    vector<array<int, 4>> events;
+    void addRect(int x0, int y0, int x1, int y1) {
+        events.push_back({x0, y0, y1, +1});
+        events.push_back({x1, y0, y1, -1});
+        CL = min(CL, y0);
+        CR = max(CR, y1);
+    }
+
+    long long getArea() {
+        sort(events.begin(), events.end());
+        int last = events.front()[0];
+        long long res = 0;
+        for (array<int, 4> e : events) {
+            int x = e[0], y0 = e[1], y1 = e[2], delta = e[3];
+            res += 1LL * (x - last) * sum();
+            add(y0, y1, delta);
+            last = x;
+        }
+        return res;
+    }
+};

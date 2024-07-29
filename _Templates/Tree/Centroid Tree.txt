@@ -1,0 +1,37 @@
+struct CentroidTree {
+    vector<int> parent;
+
+    CentroidTree(const int &n, const vector<vector<int>> &adj) : parent(n) {
+        vector<bool> blocked(n, false);
+
+        vector<int> siz(n);
+        auto getSize = [&](auto self, int u, int p) -> void {
+            siz[u] = 1;
+            for (int v : adj[u]) {
+                if (v == p || blocked[v]) continue;
+                self(self, v, u);
+                siz[u] += siz[v];
+            }
+        };
+
+        auto getCentroid = [&](auto self, int u, int p, int n) -> int {
+            for (int v : adj[u]) {
+                if (v == p || blocked[v]) continue;
+                if (siz[v] > n / 2) return self(self, v, u, n);
+            }
+            return u;
+        };
+
+        auto build = [&](auto self, int u, int p) -> void {
+            getSize(getSize, u, -1);
+            u = getCentroid(getCentroid, u, -1, siz[u]);
+            blocked[u] = true;
+            parent[u] = p;
+            for (int v : adj[u]) {
+                if (blocked[v]) continue;
+                self(self, v, u);
+            }
+        };
+        build(build, 0, -1);
+    }
+};

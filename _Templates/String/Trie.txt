@@ -1,0 +1,36 @@
+template <int C>
+struct Trie {
+    vector<array<int, C>> nodes;
+
+    Trie() : nodes(1, array<int, C>{}) {}
+
+    int add(vector<int> v) {
+        int u = 0;
+        for (int c : v) {
+            if (!nodes[u][c]) {
+                nodes[u][c] = nodes.size();
+                nodes.push_back({});
+            }
+            u = nodes[u][c];
+        }
+        return u;
+    }
+
+    int add(string s) {
+        vector<int> v;
+        for (char ch : s) v.push_back(ch - 'a');
+        return add(v);
+    }
+
+    int next(int u, int c) {
+        return nodes[u][c];
+    }
+
+    int next(int u, char ch) {
+        return nodes[u][ch - 'a'];
+    }
+
+    int size() {
+        return nodes.size();
+    }
+};

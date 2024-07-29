@@ -1,0 +1,69 @@
+namespace sieges {
+    vector<int> getLink(int n) {
+        vector<int> link(n, 0);
+        for (int p = 2; p < n; p++) {
+            if (link[p] != 0) continue;
+            for (int mp = p; mp < n; mp += p) {
+                link[mp] = p;
+            }
+        }
+        return link;
+    }
+
+    vector<int> getPrimes(int n) {
+        vector<int> link = getLink(n);
+        vector<int> primes;
+        for (int p = 2; p < n; p++) {
+            if (link[p] == p) {
+                primes.push_back(p);
+            }
+        }
+        return primes;
+    }
+
+    vector<int> getPhi(int n) {
+        vector<int> phi(n);
+        iota(phi.begin(), phi.end(), 0);
+        for (int p = 2; p < n; p++) {
+            if (phi[p] != p) continue;
+            for (int mp = p; mp < n; mp += p) {
+                phi[mp] -= phi[mp] / p;
+            }
+        }
+        return phi;
+    }
+
+    vector<int> getMuy(int n) {
+        vector<int> muy(n, -2);
+        if (1 < n) muy[1] = 1;
+        for (int p = 2; p < n; p++) {
+            if (muy[p] != -2) continue;
+            muy[p] = -1;
+            for (int mp = p + p; mp < n; mp += p) {
+                muy[mp] = (mp / p % p != 0) * muy[p] * muy[mp / p];
+            }
+        }
+        return muy;
+    }
+
+    vector<int> link, phi, muy;
+    void compute(int n) {
+        link = getLink(n);
+//        phi = getPhi(n);
+//        muy = getMuy(n);
+    }
+
+    vector<int> factorize(int x, bool remove_duplicate = false) {
+        assert(x < link.size());
+        vector<int> res;
+        while (x > 1) {
+            int p = link[x];
+            res.push_back(p);
+            x /= p;
+            if (remove_duplicate) {
+                while (x % p == 0) x /= p;
+            }
+        }
+        return res;
+    }
+}

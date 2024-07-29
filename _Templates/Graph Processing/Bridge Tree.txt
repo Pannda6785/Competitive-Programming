@@ -1,0 +1,50 @@
+struct BridgeTree { // assumes full connectivity, multi-edge and self-loop ok
+    vector<vector<int>> bt;
+    vector<int> comp;
+
+    BridgeTree(int n, vector<vector<int>> &adj) : comp(n, -1) {
+        vector<int> num(n, -1), low(n);
+        int tim = 0;
+        vector<int> stk;
+        int id = 0;
+
+        function<void(int, int)> dfs = [&](int u, int p) {
+            num[u] = low[u] = tim++;
+            stk.push_back(u);
+            bool backed = false;
+            for (int v : adj[u]) {
+                if (v == p && !backed) {
+                    backed = true;
+                    continue;
+                }
+                if (num[v] == -1) {
+                    dfs(v, u);
+                    low[u] = min(low[u], low[v]);
+                } else {
+                    low[u] = min(low[u], num[v]);
+                }
+            }
+            if (num[u] == low[u]) {
+                int v;
+                bt.emplace_back();
+                do {
+                    v = stk.back();
+                    stk.pop_back();
+                    comp[v] = id;
+                    for (int w : adj[v]) {
+                        if (comp[w] != -1 && comp[w] != comp[v]) {
+                            bt[comp[w]].push_back(comp[v]);
+                            bt[comp[v]].push_back(comp[w]);
+                        }
+                    }
+                } while (v != u);
+                id++;
+            }
+        };
+
+        dfs(0, -1);
+    }
+
+    int size() { return bt.size(); }
+    vector<vector<int>> getBT() { return bt; }
+};

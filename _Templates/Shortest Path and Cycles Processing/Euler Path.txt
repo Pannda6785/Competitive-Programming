@@ -1,0 +1,49 @@
+// directed
+
+void gg() {
+    cout  IMPOSSIBLEn;
+    exit(0);
+}
+
+int main() {
+    int n, m;
+    cin  n  m;
+
+    vectorvectorint adj(n);
+    vectorint in(n, 0), out(n, 0);
+    for (int i = 0; i  m; i++) {
+        int u, v;
+        cin  u  v;
+        u--;
+        v--;
+        adj[u].push_back(v);
+        out[u]++;
+        in[v]++;
+    }
+
+    if (out[0] != in[0] + 1  out[n - 1] + 1 != in[n - 1]) gg();
+    for (int u = 1; u  n - 1; u++) {
+        if (out[u] != in[u]) gg();
+    }
+
+    vectorint key;
+
+    functionvoid(int) dfs = [&](int u) {
+        while (!adj[u].empty()) {
+            int v = adj[u].back();
+            adj[u].pop_back();
+            dfs(v);
+            key.push_back(u);
+        }
+    };
+    dfs(0);
+
+    if (key.size() != m) gg();
+
+    reverse(key.begin(), key.end());
+    key.push_back(n - 1);
+    for (int x  key) {
+        cout  x + 1  ' ';
+    }
+    cout  'n';
+}

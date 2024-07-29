@@ -1,0 +1,28 @@
+// merge (x = a0 (mod n0)) and (x = a1 (mod n1)) into (x = A (mod N)), returns by (A, N) or (-1, -1) if no solution. Also solves diophantine
+
+long long gcd(long long a, long long b, long long &x, long long &y) {
+    if (b == 0) {
+        x = 1;
+        y = 0;
+        return a;
+    }
+    long long _x, _y;
+    long long g = gcd(b, a % b, _x, _y);
+    x = _y;
+    y = _x - _y * (a / b);
+    return g;
+}
+
+array<long long, 2> crt(array<long long, 2> eq0, array<long long, 2> eq1) {
+    auto [a0, n0] = eq0;
+    auto [a1, n1] = eq1;
+    long long x0, x1;
+    long long g = gcd(n0, -n1, x0, x1);
+    if ((a0 - a1) % g != 0) return array<long long, 2>{-1, -1};
+    x0 *= -(a0 - a1) / g;
+    x1 *= -(a0 - a1) / g;
+    long long n = n0 / __gcd(n0, n1) * n1;
+    long long a = n0 * (x0 % (n1 / g)) % n + a0;
+    a = (a % n + n) % n;
+    return array<long long, 2>{a, n};
+}

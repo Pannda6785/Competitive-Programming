@@ -1,0 +1,46 @@
+struct FlowWithDemand {
+    int n, s, t;
+    Flow flow;
+    int virtual_s, virtual_t;
+    long long demand_sum = 0;
+    int i;
+
+    FlowWithDemand(int n, int s, int t, vector<array<int, 4>> edges) : n(n), s(s), t(t), flow(n + 2), virtual_s(n), virtual_t(n + 1) {
+        i = flow.addEdge(t, s, INF);
+        for (auto [u, v, capacity, demand] : edges) {
+            flow.addEdge(u, v, capacity - demand);
+            flow.addEdge(u, virtual_t, demand);
+            flow.addEdge(virtual_s, v, demand);
+            demand_sum += demand;
+        }
+    }
+
+    bool ok(int bound) {
+        flow.clearFlow();
+        flow.edges[i].capacity = bound;
+        return flow.maxFlow(virtual_s, virtual_t) == demand_sum;
+    }
+
+    int minFlow() {
+        int l = 1, r = demand_sum + 10;
+        while (l < r) {
+            int m = (l + r) >> 1;
+            if (ok(m)) {
+                r = m;
+            } else {
+                l = m + 1;
+            }
+        }
+        if (!ok(l)) return -1;
+        for (auto [u, v, capacity, flowed] : flow.edges) {
+            if (capacity > 0 && u == t && v == s) {
+                return flowed;
+            }
+        }
+        return -1;
+    }
+
+    vector<Flow::Edge> edges() {
+        return flow.edges;
+    }
+};

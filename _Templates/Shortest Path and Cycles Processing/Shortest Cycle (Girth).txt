@@ -1,0 +1,41 @@
+const int INF = 1e9;
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+
+    vector<vector<int>> adj(n);
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        u--;
+        v--;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    int ans = INF;
+    for (int s = 0; s < n; s++) {
+        vector<int> dist(n, -1);
+        vector<int> par(n, -1);
+        queue<int> que;
+        dist[s] = 0;
+        que.push(s);
+        while (!que.empty()) {
+            int u = que.front();
+            que.pop();
+            for (int v : adj[u]) {
+                if (v == par[u]) continue;
+                if (dist[v] == -1) {
+                    dist[v] = dist[u] + 1;
+                    par[v] = u;
+                    que.push(v);
+                } else {
+                    ans = min(ans, dist[u] + dist[v] + 1);
+                }
+            }
+        }
+    }
+
+    ans == INF ? cout << -1 << '\n' : cout << ans << '\n';
+}

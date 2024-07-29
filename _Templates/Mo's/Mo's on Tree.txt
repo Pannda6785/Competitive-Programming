@@ -1,0 +1,78 @@
+// depends on Tree in General (for LCA), make euler's tour a 2n one
+
+int main() {
+    vector<vector<int>> adj(n);
+    Tree tree(n, adj);
+
+    vector<int> mp(n + n); // map position on 2n euler's tour to node
+    for (int u = 0; u < n; u++) {
+        mp[tree.begin[u]] = mp[tree.end[u]] = u;
+    }
+
+    vector<array<int, 2>> qs(q);
+    vector<array<int, 3>> order(q);
+    for (int i = 0; i < q; i++) {
+        int u, v;
+        cin >> u >> v;
+        u--;
+        v--;
+        // get (l, r) from (u, v)
+        int uv = tree.lca(u, v);
+        qs[i] = { u, v };
+        if (uv == u || uv == v) {
+            if (v == uv) swap(u, v);
+            int l = tree.begin[u];
+            int r = tree.begin[v] + 1;
+            order[i] = { l, r, i };
+        } else {
+            if (tree.begin[u] > tree.begin[v]) swap(u, v);
+            int l = tree.end[u];
+            int r = tree.begin[v] + 1;
+            order[i] = { l, r, i };
+        }
+    }
+
+    const int B = 252;
+    sort(order.begin(), order.end(), [&](array<int, 3> e0, array<int, 3> e1) {
+        int l0 = e0[0] / B, l1 = e1[0] / B;
+        if (l0 != l1) return l0 < l1;
+        return (l0 & 1) ? e0[1] > e1[1] : e0[1] < e1[1];
+    });
+
+    int cl = 0, cr = 0;
+    vector<int> present(n, 0);
+    vector<int> cnt(C, 0);
+    int res = 0;
+
+    auto toggle = [&](int u) {
+        present[u] ^= 1;
+        if (present[u]) {
+            cnt[a[u]]++;
+            res += cnt[a[u]] == 1;
+        } else {
+            cnt[a[u]]--;
+            res -= cnt[a[u]] == 0;
+        }
+    };
+
+    auto fix = [&](int l, int r) {
+        while (l < cl) toggle(mp[--cl]);
+        while (cr < r) toggle(mp[cr++]);
+        while (cl < l) toggle(mp[cl++]);
+        while (r < cr) toggle(mp[--cr]);
+    };
+
+    auto query = [&](int u, int v) {
+        int uv = tree.lca(u, v);
+        if (uv == u || uv == v) {
+            return res;
+        } else {
+            toggle(uv);
+            int fetch = res;
+            toggle(uv);
+            return fetch;
+        }
+    };
+
+    // iterate the queries in order[], fix() first, then query()
+}

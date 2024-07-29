@@ -1,0 +1,47 @@
+struct BlockCutTree { // assumes full connectivity, multi-edge and self-loop ok
+    vector<vector<int>> bct; // the tree, virtual nodes are numbered from n onward
+
+    BlockCutTree(int n, vector<vector<int>> &adj) : bct(n) {
+        vector<int> num(n, -1), low(n);
+        int tim = 0;
+        vector<int> stk;
+        int id = n;
+
+        function<void(int, int)> dfs = [&](int u, int p) {
+            num[u] = low[u] = tim++;
+            stk.push_back(u);
+            bool backed = false;
+            for (int v : adj[u]) {
+                if (v == p && !backed) {
+                    backed = true;
+                    continue;
+                }
+                if (num[v] == -1) {
+                    dfs(v, u);
+                    low[u] = min(low[u], low[v]);
+                    if (low[v] >= num[u]) {
+                        bct.emplace_back();
+                        int w;
+                        do {
+                            w = stk.back();
+                            stk.pop_back();
+                            bct[w].push_back(id);
+                            bct[id].push_back(w);
+                        } while (w != v);
+                        bct[u].push_back(id);
+                        bct[id].push_back(u);
+                        id++;
+                    }
+                } else {
+                    low[u] = min(low[u], num[v]);
+                }
+            }
+        };
+
+        dfs(0, -1);
+    }
+
+    int size() { return bct.size(); }
+    vector<vector<int>> getBCT() { return bct; }
+    vector<int> neighbour(int u) { return bct[u]; }
+};

@@ -1,0 +1,39 @@
+template <class T>
+struct Fenwick2D {
+    int n;
+    long long m;
+    vector<vector<T>> bit;
+    vector<vector<long long>> f;
+    Fenwick2D(int n, long long m) : n(n), m(m), bit(n + 1), f(n + 1) {}
+    void fakeAdd(int i0, long long j0) {
+        for (int i = i0 + 1; i <= n; i += i & -i) {
+            for (long long j = j0 + 1; j <= m; j += j & -j) {
+                f[i].push_back(j);
+            }
+        }
+    }
+    void work() {
+        for (int i = 1; i <= n; i++) {
+            f[i].push_back(0);
+            sort(f[i].begin(), f[i].end());
+            f[i].resize(unique(f[i].begin(), f[i].end()) - f[i].begin());
+            bit[i].resize(f[i].size(), 0);
+        }
+    }
+    void add(int i0, long long j0, T x) {
+        for (int i = i0 + 1; i <= n; i += i & -i) {
+            for (int j = lower_bound(f[i].begin(), f[i].end(), j0 + 1) - f[i].begin(); j < (int)f[i].size(); j += j & -j) {
+                bit[i][j] += x;
+            }
+        }
+    }
+    T sum(int i0, long long j0) {
+        T res = 0;
+        for (int i = i0; i > 0; i -= i & -i) {
+            for (int j = int(upper_bound(f[i].begin(), f[i].end(), j0) - f[i].begin()) - 1; j > 0; j -= j & -j) {
+                res += bit[i][j];
+            }
+        }
+        return res;
+    }
+};

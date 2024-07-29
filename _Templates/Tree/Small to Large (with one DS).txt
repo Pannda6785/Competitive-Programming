@@ -1,0 +1,47 @@
+{
+    int res;
+    auto add = [&](int u, int delta) {
+
+    };
+
+    auto addSubtree = [&](auto self, int u, int p, int delta) -> void {
+        add(u, delta);
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            self(self, v, u, delta);
+        }
+    };
+
+    vector<int> siz(n);
+    auto scout = [&](auto self, int u, int p) -> void {
+        siz[u] = 1;
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            self(self, v, u);
+            siz[u] += siz[v];
+        }
+    };
+    scout(scout, 0, -1);
+
+    auto compute = [&](auto self, int u, int p, bool keep) -> void {
+        int heavy = -1;
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            if (heavy == -1 || siz[v] > siz[heavy]) heavy = v;
+        }
+        for (int v : adj[u]) {
+            if (v == p || v == heavy) continue;
+            self(self, v, u, false);
+        }
+        if (heavy != -1) self(self, heavy, u, true);
+        for (int v : adj[u]) {
+            if (v == p || v == heavy) continue;
+            addSubtree(addSubtree, v, u, +1);
+        }
+        add(u, +1);
+        ans[u] = res;
+        if (!keep) addSubtree(addSubtree, u, p, -1);
+    };
+    compute(compute, 0, -1, true);
+    return ans;
+}

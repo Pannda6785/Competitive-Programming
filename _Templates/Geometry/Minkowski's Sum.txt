@@ -1,0 +1,47 @@
+typedef complex<long long> point;
+typedef vector<point> polygon;
+long long cross(point a, point b) {
+    return (conj(a) * b).imag();
+}
+
+void anchor(polygon &a) {
+    int anc = 0;
+    for (int i = 0; i < (int)a.size(); i++) {
+        if (a[i].real() < a[anc].real()) anc = i;
+        else if (a[i].real() == a[anc].real() && a[i].imag() < a[anc].imag()) anc = i;
+    }
+    rotate(a.begin(), a.begin() + anc, a.end());
+}
+
+polygon operator+(polygon a, polygon b) { // assumes polygons are strictly convex and in counter-clockwise order
+    anchor(a);
+    anchor(b);
+    int n = a.size();
+    int m = b.size();
+    polygon res = { a[0] + b[0] };
+    int i = 0, j = 0;
+    while (i < n && j < m) {
+        long long cr = cross(a[(i + 1) % n] - a[i], b[(j + 1) % m] - b[j]);
+        if (cr == 0) {
+            i++;
+            j++;
+        }
+        if (cr > 0) {
+            i++;
+        }
+        if (cr < 0) {
+            j++;
+        }
+        res.push_back(a[i % n] + b[j % m]);
+    }
+    while (i < n) {
+        i++;
+        res.push_back(a[i % n] + b[j % m]);
+    }
+    while (j < m) {
+        j++;
+        res.push_back(a[i % n] + b[j % m]);
+    }
+    res.pop_back();
+    return res;
+}

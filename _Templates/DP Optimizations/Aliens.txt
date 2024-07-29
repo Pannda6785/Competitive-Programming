@@ -1,0 +1,35 @@
+{
+    vector<int> sum(n + 1, 0);
+    for (int i = 0; i < n; i++) {
+        sum[i + 1] = sum[i] + a[i];
+    }
+
+    auto getExtremum = [&](int lambda) -> pair<int, int> {
+        vector<pair<int, int>> dp(n + 1, make_pair(sum[n], 0));
+        for (int i = 0; i < n; i++) {
+            auto [v, arg] = dp[max(0, i + 1 - len)];
+            v -= sum[i + 1] - sum[max(0, i + 1 - len)];
+            v += lambda;
+            arg++;
+            dp[i + 1] = min(dp[i], make_pair(v, arg));
+        }
+        return dp[n];
+    };
+
+    int lambda = [&]() -> int {
+        int l = 0, r = 1e9;
+        while (r - l > 0) {
+            int m = (l + r) / 2;
+            auto [extre, arg] = getExtremum(m);
+            if (arg <= k) {
+                r = m;
+            } else {
+                l = m + 1;
+            }
+        }
+        return l;
+    }();
+
+    auto [extre, arg] = getExtremum(lambda);
+    return extre - lambda * k;
+}

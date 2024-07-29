@@ -1,0 +1,9 @@
+~ Lucas's Theorem:
+    Binomial(n, k) = product(Binomial(ni,ki)) (mod b)
+    where ni and ki are digits in base prime b.
+    And so Binomial(n, k) = 1 (mod 2) if and only if k is submask of n
+
+~ Number of trees:
+    on n vertices: n^(n-2)
+    on k existing trees of size ni: n1*n2*nk*n^(k-2)
+    with degrees di: (n-2)! / (d1-1)! / (di-1)! / (dn-1)!

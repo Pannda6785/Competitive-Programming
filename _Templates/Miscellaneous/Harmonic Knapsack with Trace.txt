@@ -1,0 +1,51 @@
+{
+    int n;
+    vector<int> initial_items(n);
+    map<int, vector<vector<int>>> objects;
+
+    for (int i = 0; i < n; i++) {
+        int x = initial_items[i];
+        objects[x].push_back({i});
+        while (objects[x].size() == 3) {
+            vector<int> vec1 = objects[x].back();
+            objects[x].pop_back();
+            vector<int> vec2 = objects[x].back();
+            objects[x].pop_back();
+            vec1.insert(vec1.end(), vec2.begin(), vec2.end());
+            objects[x + x].push_back(vec1);
+            x = x + x;
+        }
+    }
+
+    int C; // desired size of knapsack
+    vector<int> knapsack(C, -1);
+    vector<vector<int>> indexes;
+    vector<int> weight;
+    int id = 0;
+
+    knapsack[0] = 6785;
+    for (pair<int, vector<vector<int>>> pai : objects) {
+        int x = pai.first;
+        vector<vector<int>> &vecs = pai.second;
+        for (vector<int> vec : vecs) {
+            indexes.push_back(vec);
+            weight.push_back(x);
+            for (int sum = C - 1; sum >= x; sum--) {
+                if (knapsack[sum - x] != -1 && knapsack[sum] == -1) {
+                    knapsack[sum] = id;
+                }
+            }
+            id++;
+        }
+    }
+
+    int sum; // some desired sum that the knapsack can create, knap[sum] != -1
+
+    map<int, bool> selected;
+    while (sum > 0) {
+        for (int i : indexes[knapsack[sum]]) {
+            selected[i] = true;
+        }
+        sum -= weight[knapsack[sum]];
+    }
+}

@@ -1,0 +1,47 @@
+template <int C>
+struct SuffixAutomaton {
+    struct Node {
+        int len, link;
+        vector<int> next;
+        Node() : len(0), link(-1), next(C, 0) {}
+    };
+
+    vector<Node> nodes;
+    int cur;
+
+    SuffixAutomaton() : nodes(1), cur(0) {}
+
+    int add(int c) {
+        int prev = cur;
+        cur = nodes.size();
+        nodes.emplace_back();
+        nodes[cur].len = nodes[prev].len + 1;
+        int p = prev;
+        while (p != -1 && !nodes[p].next[c]) {
+            nodes[p].next[c] = cur;
+            p = nodes[p].link;
+        }
+        if (p == -1) {
+            nodes[cur].link = 0;
+        } else {
+            int q = nodes[p].next[c];
+            if (nodes[p].len + 1 == nodes[q].len) {
+                nodes[cur].link = q;
+            } else {
+                int clone = nodes.size();
+                nodes.push_back(nodes[q]);
+                nodes[clone].len = nodes[p].len + 1;
+                nodes[cur].link = nodes[q].link = clone;
+                while (p != -1 && nodes[p].next[c] == q) {
+                    nodes[p].next[c] = clone;
+                    p = nodes[p].link;
+                }
+            }
+        }
+        return cur;
+    }
+
+    int size() { return nodes.size(); }
+    int link(int u) { return nodes[u].link; }
+    int next(int u, int c) { return nodes[u].next[c]; }
+};

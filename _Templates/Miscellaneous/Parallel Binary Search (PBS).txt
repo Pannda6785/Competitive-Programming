@@ -1,0 +1,27 @@
+// the number of queries is n
+
+{
+    vector<array<int, 2>> qs(n);
+    vector<vector<int>> inbox(k + 2);
+    for (int i = 0; i < n; i++) {
+        qs[i] = { 0, k + 1 }; // left and right
+        inbox[(0 + k + 1) >> 1].push_back(i);
+    }
+    for (int ite = 0; ite < LOG; ite++) {
+        Fenwick fen(m); // DS
+        vector<vector<int>> new_inbox(k + 2);
+        for (int mid = 0; mid <= k; mid++) {
+            for (int i : inbox[mid]) {
+                int &l = qs[i][0], &r = qs[i][1];
+                if (ok) r = mid;
+                else l = mid + 1;
+                new_inbox[(l + r) >> 1].push_back(i);
+            }
+            if (mid < k) { // add to DS
+                fen.add(showers[mid][0], showers[mid][1], showers[mid][2]);
+            }
+        }
+        inbox = new_inbox;
+    }
+    // result is qs[i][0] for each i
+}

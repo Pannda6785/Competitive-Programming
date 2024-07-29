@@ -1,0 +1,47 @@
+typedef complex<long long> point;
+long long cross(point a, point b) {
+    return (conj(a) * b).imag();
+}
+long long dot(point a, point b) {
+    return (conj(a) * b).real();
+}
+
+int sgn(long long x) {
+    if (x == 0) return 0;
+    return x > 0 ? +1 : -1;
+}
+
+bool colinear(point a, point b, point c) {
+    return cross(a - b, a - c) == 0;
+}
+
+bool between(point x, point a, point b) {
+    if (!colinear(a, b, x)) return false;
+    return dot(a - x, b - x) <= 0;
+}
+
+bool intersect(point a0, point a1, point b0, point b1) { // positive respond on intersection among endpoints
+    if (colinear(a0, a1, b0) && colinear(a0, a1, b1)) {
+        return between(a0, b0, b1) || between(a1, b0, b1) || between(b0, a0, a1) || between(b1, a0, a1);
+    } else {
+        bool proxy0 = sgn(cross(a1 - a0, b0 - a0)) * sgn(cross(a1 - a0, b1 - a0)) <= 0;
+        bool proxy1 = sgn(cross(b1 - b0, a0 - b0)) * sgn(cross(b1 - b0, a1 - b0)) <= 0;
+        return proxy0 && proxy1;
+    }
+}
+
+bool inside(point p, vector<point> &a) { // assumes a to be ordered in clockwise order, strictly inside
+    int l = 1, r = a.size() - 1;
+    if (cross(a[l] - a[0], p - a[0]) >= 0) return false;
+    if (cross(a[r] - a[0], p - a[0]) <= 0) return false;
+    while (l + 1 < r) {
+        int m = (l + r) >> 1;
+        if (cross(a[m] - a[0], p - a[0]) <= 0) {
+            l = m;
+        } else {
+            r = m;
+        }
+    }
+    if (cross(a[r] - a[l], p - a[l]) >= 0) return false;
+    return true;
+}

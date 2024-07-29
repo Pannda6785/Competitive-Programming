@@ -1,0 +1,53 @@
+// undirected
+
+void gg() {
+    cout << "IMPOSSIBLE\n";
+    exit(0);
+}
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+
+    vector<vector<array<int, 2>>> adj(n);
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        u--;
+        v--;
+        adj[u].push_back({ v, i });
+        adj[v].push_back({ u, i });
+    }
+
+    for (int u = 0; u < n; u++) {
+        if ((int)adj[u].size() % 2 == 1) gg();
+    }
+
+    vector<bool> used(m, false);
+    vector<int> key;
+
+    function<void(int)> dfs = [&](int u) {
+        while (!adj[u].empty()) {
+            auto [v, i] = adj[u].back();
+            adj[u].pop_back();
+            if (used[i]) continue;
+            used[i] = true;
+            dfs(v);
+            key.push_back(u);
+        }
+    };
+
+    dfs(0);
+    if ((int)key.size() != m) gg();
+    for (int i = 0; ; i++) {
+        if (key[i] == 0) {
+            rotate(key.begin(), key.begin() + i, key.end());
+            break;
+        }
+    }
+    key.push_back(key.front());
+    for (int x : key) {
+        cout << x + 1 << ' ';
+    }
+    cout << '\n';
+}

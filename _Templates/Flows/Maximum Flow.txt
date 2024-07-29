@@ -1,0 +1,103 @@
+template <class T>
+struct Flow {
+    const T INF = numeric_limits<T>::max() / 2;
+    struct Edge {
+        int u, v;
+        T capacity, flowed;
+    };
+
+    int n, m;
+    vector<Edge> edges;
+    vector<vector<int>> adj;
+    vector<int> layer;
+    vector<int> ptr;
+
+    Flow(int n) : n(n), m(0), adj(n), layer(n), ptr(n) {}
+
+    int addEdge(int u, int v, T capacity) {
+        adj[u].push_back(m);
+        edges.push_back({ u, v, capacity, 0 });
+        adj[v].push_back(m + 1);
+        edges.push_back({ v, u, 0, 0 });
+        m += 2;
+        return m - 2;
+    }
+
+    bool bfs(int s, int t) {
+        fill(layer.begin(), layer.end(), -1);
+        queue<int> que;
+        layer[s] = 0;
+        que.push(s);
+        while (!que.empty()) {
+            int u = que.front();
+            que.pop();
+            for (int i : adj[u]) {
+                auto [_u, v, capacity, flowed] = edges[i];
+                if (capacity - flowed < 1) continue;
+                if (layer[v] != -1) continue;
+                layer[v] = layer[u] + 1;
+                que.push(v);
+            }
+        }
+        return layer[t] != -1;
+    }
+
+    T dfs(int u, int t, T pushed) {
+        if (u == t) {
+            return pushed;
+        }
+        for (int &ii = ptr[u]; ii < (int)adj[u].size(); ii++) {
+            int i = adj[u][ii];
+            auto [_u, v, capacity, flowed] = edges[i];
+            if (capacity - flowed < 1) continue;
+            if (layer[v] != layer[u] + 1) continue;
+            T push = min(pushed, capacity - flowed);
+            push = dfs(v, t, push);
+            if (push > 0) {
+                edges[i].flowed += push;
+                edges[i ^ 1].flowed -= push;
+                return push;
+            }
+        }
+        return 0;
+    }
+
+    T maxFlow(int s, int t) {
+        T flowed = 0;
+        while (bfs(s, t)) {
+            fill(ptr.begin(), ptr.end(), 0);
+            while (T newly_flowed = dfs(s, t, INF)) {
+                flowed += newly_flowed;
+            }
+        }
+        return flowed;
+    }
+
+    vector<int> minCut(int s, int t) { // returns the indices of edges
+        maxFlow(s, t);
+        vector<bool> vis(n, false);
+        queue<int> que;
+        vis[s] = true;
+        que.push(s);
+        while (!que.empty()) {
+            int u = que.front();
+            que.pop();
+            for (int i : adj[u]) {
+                auto [_u, v, capacity, flow] = edges[i];
+                if (capacity - flow < 1) continue;
+                if (!vis[v]) {
+                    vis[v] = true;
+                    que.push(v);
+                }
+            }
+        }
+        vector<int> res;
+        for (int i = 0; i < m; i += 2) {
+            auto [u, v, capacity, flowed] = edges[i];
+            if (capacity - flowed < 1 && vis[u] && !vis[v]) {
+                res.push_back(i);
+            }
+        }
+        return res;
+    }
+};

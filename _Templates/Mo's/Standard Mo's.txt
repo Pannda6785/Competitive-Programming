@@ -1,0 +1,10 @@
+{
+    int cl = 0, cr = 0;
+    auto getAnswer = [&](int l, int r) {
+        while (cl > l) add(--cl);
+        while (cr < r) add(cr++);
+        while (r < cr) remove(--cr);
+        while (cl < l) remove(cl++);
+        return fetchResult();
+    };
+}

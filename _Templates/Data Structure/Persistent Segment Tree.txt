@@ -1,0 +1,37 @@
+// range k-th smallest
+
+struct SegmentTree {
+    struct Node {
+        int sum = 0;
+        int ln = 0, rn = 0;
+    };
+
+    int n;
+    vector<Node> nodes;
+
+    SegmentTree(int n) : n(n), nodes(1) {}
+
+    void add(int i, int delta, int base, int &idx, int l, int r) {
+        idx = nodes.size();
+        nodes.push_back(nodes[base]);
+        nodes[idx].sum += delta;
+        if (l + 1 < r) {
+            int m = (l + r) >> 1;
+            Node goat = nodes[idx];
+            if (i < m) add(i, delta, nodes[base].ln, goat.ln, l, m);
+            else add(i, delta, nodes[base].rn, goat.rn, m, r);
+            nodes[idx] = goat;
+        }
+    }
+
+    int walk(int k, int idxl, int idxr, int l, int r) {
+        if (l + 1 == r) return l;
+        int m = (l + r) >> 1;
+        int cntl = nodes[nodes[idxr].ln].sum - nodes[nodes[idxl].ln].sum;
+        if (cntl <= k) return walk(k - cntl, nodes[idxl].rn, nodes[idxr].rn, m, r);
+        else return walk(k, nodes[idxl].ln, nodes[idxr].ln, l, m);
+    }
+
+    void add(int i, int val, int base, int &idx) { add(i, val, base, idx, 0, n); }
+    int walk(int x, int idxl, int idxr) { return walk(x, idxl, idxr, 0, n); }
+};

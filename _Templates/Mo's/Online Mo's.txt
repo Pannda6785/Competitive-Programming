@@ -1,0 +1,47 @@
+int main() {
+    vector<array<int, 3>> qs; // only queries: l, r, time of query
+    vector<array<int, 4>> changes; // { time of change, object to change, before change, after change }
+
+    changes.push_back({ -1, -1, 0, 0 });
+    changes.push_back({ q, -1, 0, 0 });
+
+    const int B = 2700;
+    sort(qs.begin(), qs.end(), [&](array<int, 3> e0, array<int, 3> e1) {
+        int l0 = e0[0] / B, l1 = e1[0] / B;
+        if (l0 != l1) return l0 < l1;
+        int r0 = e0[1] / B, r1 = e1[1] / B;
+        if (r0 != r1) return (l0 & 1) ? r0 > r1 : r0 < r1;
+        return (r0 & 1) ? e0[2] > e1[2] : e0[2] < e1[2];
+    });
+
+    auto add = [&](int x) { };
+    auto remove = [&](int x) { };
+    auto change = [&](int p, int x) {
+        if (cl <= p && p < cr) {
+            remove(a[p]);
+            add(x);
+        }
+        a[p] = x; // apply change
+    };
+
+    auto fix = [&](int l, int r, int i) {
+        while (l < cl) add(a[--cl]);
+        while (cr < r) add(a[cr++]);
+        while (cl < l) remove(a[cl++]);
+        while (r < cr) remove(a[--cr]);
+        while (changes[cii][0] < i) { change(changes[cii][1], changes[cii][3]), cii++; }
+        while (i < changes[cii - 1][0]) { cii--; change(changes[cii][1], changes[cii][2]); }
+    };
+
+    auto getMex = [&]() { // query
+        int mex = 0;
+        while (freq_cnt[mex]) mex++;
+        return mex;
+    };
+
+    vector<int> ans(q, -1);
+    for (auto [l, r, i] : qs) {
+        fix(l, r, i);
+        ans[i] = getMex();
+    }
+}

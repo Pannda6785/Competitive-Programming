@@ -1,0 +1,91 @@
+// uses coordinate compression
+
+struct RectUnionArea {
+    vector<int> val;
+    vector<array<int, 4>> events;
+
+    struct Node {
+        int mn, cnt, lazy;
+        Node operator+(Node b) {
+            Node a = *this;
+            if (a.mn > b.mn) swap(a, b);
+            Node res = a;
+            if (a.mn == b.mn) res.cnt += b.cnt;
+            res.lazy = 0;
+            return res;
+        }
+    };
+    vector<Node> nodes;
+
+    void build(int idx, int l, int r) {
+        nodes[idx] = { 0, val[r] - val[l], 0 };
+        if (l + 1 < r) {
+            int m = (l + r) >> 1;
+            build(2 * idx + 1, l, m);
+            build(2 * idx + 2, m, r);
+        }
+    }
+
+    void apply(int idx, int l, int r, int delta) {
+        nodes[idx].mn += delta;
+        nodes[idx].lazy += delta;
+    }
+
+    void down(int idx, int l, int r) {
+        int m = (l + r) >> 1;
+        apply(2 * idx + 1, l, m, nodes[idx].lazy);
+        apply(2 * idx + 2, m, r, nodes[idx].lazy);
+        nodes[idx].lazy = 0;
+    }
+
+    void add(int ql, int qr, int delta, int idx, int l, int r) {
+        if (r <= ql || qr <= l) return;
+        if (ql <= l && r <= qr) {
+            apply(idx, l, r, delta);
+            return;
+        }
+        down(idx, l, r);
+        int m = (l + r) >> 1;
+        add(ql, qr, delta, 2 * idx + 1, l, m);
+        add(ql, qr, delta, 2 * idx + 2, m, r);
+        nodes[idx] = nodes[2 * idx + 1] + nodes[2 * idx + 2];
+    }
+
+    int getGlobalNonZero() {
+        return val.back() - val.front() - (nodes[0].mn == 0) * nodes[0].cnt;
+    }
+
+    void addRect(int x0, int y0, int x1, int y1) {
+        if (x0 > x1) swap(x0, x1);
+        if (y0 > y1) swap(y0, y1);
+        events.push_back({ x0, +1, y0, y1 });
+        events.push_back({ x1, -1, y0, y1 });
+        val.push_back(y0);
+        val.push_back(y1);
+    }
+
+    long long getUnionArea() {
+        if (events.empty()) return 0LL;
+        sort(events.begin(), events.end());
+
+        sort(val.begin(), val.end());
+        val.resize(unique(val.begin(), val.end()) - val.begin());
+        int C = val.size() - 1;
+
+        nodes = vector<Node>(4 * C);
+        build(0, 0, C);
+
+        int last = events[0][0];
+        long long res = 0;
+
+        for (auto [x, delta, y0, y1] : events) {
+            y0 = lower_bound(val.begin(), val.end(), y0) - val.begin();
+            y1 = lower_bound(val.begin(), val.end(), y1) - val.begin();
+            res += 1LL * (x - last) * getGlobalNonZero();
+            add(y0, y1, delta, 0, 0, C);
+            last = x;
+        }
+
+        return res;
+    }
+};

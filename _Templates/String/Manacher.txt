@@ -1,0 +1,31 @@
+vector<int> getManacher(string _s) { // return 2n-1 numbers, the i-th of these is the length of the longest palindrome centered at that position, or 0 if doesn't exist
+    string s = "$";
+    for (char c : _s) {
+        s += c;
+        s += '#';
+    }
+    s.pop_back();
+    s += '&';
+    int n = s.length();
+    vector<int> z(n, 1);
+    for (int i = 1, l = 0, r = 0; i < n - 1; i++) {
+        if (i < r) {
+            z[i] = min(r - i, z[l + r - i - 1]);
+        }
+        while (s[i - z[i]] == s[i + z[i]]) {
+            z[i]++;
+        }
+
+        if (i + z[i] > r) {
+            r = i + z[i];
+            l = i - z[i] + 1;
+        }
+
+        if (i & 1) {
+            z[i] = (z[i] - 1) / 2 * 2 + 1;
+        } else {
+            z[i] = z[i] / 2 * 2;
+        }
+    }
+    return vector<int>(z.begin() + 1, z.end() - 1);
+}

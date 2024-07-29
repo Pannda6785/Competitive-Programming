@@ -1,0 +1,29 @@
+// dp(t, i) = min(dp(t - 1, j) + cost[j, i) | j < i) where i is the length of prefix
+
+{
+    vector<long long> prev(n + 1, INF); // base case
+    prev[0] = 0; // base case
+    vector<long long> dp(n + 1);
+
+    function<void(int, int, int, int)> compute = [&](int l, int r, int optl, int optr) {
+        if (l > r) return;
+        int m = (l + r) >> 1;
+        dp[m] = INF;
+        int opt = optl;
+        for (int i = optl; i <= min(optr, m); i++) {
+            if (prev[i] + cost(i, m) < dp[m]) {
+                dp[m] = prev[i] + cost(i, m);
+                opt = i;
+            }
+        }
+        compute(l, m - 1, optl, opt);
+        compute(m + 1, r, opt, optr);
+    };
+
+    for (int i = 0; i < k; i++) {
+        compute(0, n, 0, n);
+        prev = dp;
+    }
+
+    cout << dp[n] << '\n';
+}

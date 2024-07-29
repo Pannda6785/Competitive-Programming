@@ -1,0 +1,46 @@
+// dp(i) = min(dp(j < i) + cost(j, i]) where i is prefix ending at position i
+
+{
+    vector<long long> dp(n);
+    dp[0] = 0; // base case
+    deque<array<int, 2>> dq = { {0, 1} }; // x and from where x applies
+
+    for (int i = 1; i < n; i++) {
+        if (dq.size() >= 2 && dq[1][1] == i) dq.pop_front(); // the second element in dq takes over
+
+        int j = dq.front()[0];
+        dp[i] = dp[j] + cost(j, i);
+
+        if (i == n - 1) break; // from here computes from where i applies
+
+        while (!dq.empty()) {
+            int j = dq.back()[0];
+            int k = max(i + 1, dq.back()[1]);
+            if (dp[i] + cost(i, k) < dp[j] + cost(j, k)) { // dq's back prefers i over its current match
+                dq.pop_back();
+                continue;
+            }
+            break;
+        }
+
+        if (dq.empty()) {
+            dq.push_back({i, i + 1});
+        } else {
+            int j = dq.back()[0];
+            int l = max(i + 1, dq.back()[1]), r = n - 1;
+            while (l < r) {
+                int m = (l + r) >> 1;
+                if (dp[i] + cost(i, m) < dp[j] + cost(j, m)) {
+                    r = m;
+                } else {
+                    l = m + 1;
+                }
+            }
+            if (dp[i] + cost(i, l) < dp[j] + cost(j, l)) {
+                dq.push_back({i, l});
+            }
+        }
+    }
+
+    cout << dp[n - 1] << '\n';
+}

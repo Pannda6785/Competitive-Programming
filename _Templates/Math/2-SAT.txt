@@ -1,0 +1,63 @@
+struct TwoSAT {
+    int n; // number of variables
+    vector<vector<int>> adj;
+
+    TwoSAT(int n) : n(n), adj(n + n) {}
+
+    void add(int sgn_u, int u, int sgn_v, int v) { // sgn = -1 if negating, +1 otherwise, add a condition (sgn_u * u OR sgn_v * v)
+        u = sgn_u == +1 ? 2 * u : 2 * u + 1;
+        v = sgn_v == +1 ? 2 * v : 2 * v + 1;
+        adj[u ^ 1].push_back(v);
+        adj[v ^ 1].push_back(u);
+    }
+
+    bool solve(vector<int> &solution) {
+        solution.resize(n);
+
+        vector<int> num(n + n, -1), low(n + n);
+        int tim = 0;
+        vector<int> stk;
+        vector<bool> in_stk(n + n, false);
+        vector<int> comp(n + n, -1);
+        int cnt = 0;
+
+        function<void(int)> dfs = [&](int u) {
+            num[u] = low[u] = tim++;
+            stk.push_back(u);
+            in_stk[u] = true;
+            for (int v : adj[u]) {
+                if (num[v] == -1) {
+                    dfs(v);
+                    low[u] = min(low[u], low[v]);
+                } else if (in_stk[v]) {
+                    low[u] = min(low[u], num[v]);
+                }
+            }
+            if (num[u] == low[u]) {
+                int v;
+                do {
+                    v = stk.back();
+                    stk.pop_back();
+                    in_stk[v] = false;
+                    comp[v] = cnt;
+                } while (v != u);
+                cnt++;
+            }
+        };
+
+        for (int u = 0; u < n + n; u++) {
+            if (num[u] == -1) {
+                dfs(u);
+            }
+        }
+
+        for (int i = 0; i < n; i++) {
+            int u = 2 * i;
+            int nu = 2 * i + 1;
+            if (comp[u] == comp[nu]) return false;
+            solution[i] = comp[u] < comp[nu] ? +1 : -1;
+        }
+
+        return true;
+    }
+};

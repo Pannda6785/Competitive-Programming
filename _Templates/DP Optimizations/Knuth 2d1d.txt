@@ -1,0 +1,23 @@
+// dp[l, r) = min(dp[l, m) + dp[m, r) + cost[l, r))
+
+{
+    vector<vector<long long>> dp(n, vector<long long>(n + 1, INF));
+    vector<vector<int>> opt(n, vector<int>(n + 1, INF));
+    for (int i = 0; i < n; i++) {
+        dp[i][i + 1] = 0; // base case
+        opt[i][i + 1] = i;
+    }
+    for (int l = n - 1; l >= 0; l--) {
+        for (int r = l + 2; r <= n; r++) {
+            int optl = opt[l][r - 1];
+            int optr = opt[l + 1][r];
+            for (int m = optl; m <= optr; m++) {
+                if (dp[l][m] + dp[m][r] + cost(l, r) < dp[l][r]) {
+                    dp[l][r] = dp[l][m] + dp[m][r] + cost(l, r);
+                    opt[l][r] = m;
+                }
+            }
+        }
+    }
+    cout << dp[0][n] << '\n';
+}

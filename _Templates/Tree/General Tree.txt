@@ -1,0 +1,105 @@
+struct Tree {
+    vector<int> depth, parent, siz, head, begin, end, inv_begin;
+    Tree(const int &n, const vector<vector<int>> &adj) : depth(n), parent(n), siz(n), head(n), begin(n), end(n), inv_begin(n) {
+        auto dfs = [&](auto self, int u, int p) -> void {
+            depth[u] = p == -1 ? 0 : depth[p] + 1;
+            parent[u] = p;
+            siz[u] = 1;
+            for (int v : adj[u]) {
+                if (v == p) continue;
+                self(self, v, u);
+                siz[u] += siz[v];
+            }
+        };
+        dfs(dfs, 0, -1);
+        int tim = 0;
+        auto decompose = [&](auto self, int u, int h) -> void {
+            head[u] = h;
+            int heavy = -1;
+            begin[u] = tim++;
+            inv_begin[begin[u]] = u;
+            for (int v : adj[u]) {
+                if (v == parent[u]) continue;
+                if (heavy == -1 || siz[v] > siz[heavy]) heavy = v;
+            }
+            if (heavy != -1) self(self, heavy, h);
+            for (int v : adj[u]) {
+                if (v == parent[u] || v == heavy) continue;
+                self(self, v, v);
+            }
+            end[u] = tim;
+        };
+        decompose(decompose, 0, 0);
+    }
+    int getDepth(int u) {
+        return depth[u];
+    }
+    int getParent(int u) {
+        return parent[u];
+    }
+    int getAncestor(int u, int k) { // -1 if out of tree
+        while (k > 0 && u != -1) {
+            if (k > depth[u] - depth[head[u]]) {
+                k -= depth[u] - depth[head[u]] + 1;
+                u = parent[head[u]];
+            } else {
+                u = inv_begin[begin[u] - k];
+                k = 0;
+            }
+        }
+        return u;
+    }
+    bool isDescendant(int upper, int lower) {
+        return begin[upper] <= begin[lower] && begin[lower] < end[upper];
+    }
+    bool isProperDescendant(int upper, int lower) {
+        return begin[upper] < begin[lower] && begin[lower] < end[upper];
+    }
+    int getLCA(int u, int v) {
+        for (; head[u] != head[v]; v = parent[head[v]]) {
+            if (depth[head[u]] > depth[head[v]]) swap(u, v);
+        }
+        if (depth[u] > depth[v]) swap(u, v);
+        return u;
+    }
+    int getNode(int u) { // position in the Euler tour
+        return begin[u];
+    }
+    int getInvNode(int p) {
+        return inv_begin[p];
+    }
+    array<int, 2> getSubtree(int u) {
+        return array<int, 2>{ begin[u], end[u] };
+    }
+    vector<array<int, 2>> getPath(int u, int v) {
+        vector<array<int, 2>> res;
+        for (; head[u] != head[v]; v = parent[head[v]]) {
+            if (depth[head[u]] > depth[head[v]]) swap(u, v);
+            res.push_back({ begin[head[v]], begin[v] + 1 });
+        }
+        if (depth[u] > depth[v]) swap(u, v);
+        res.push_back({ begin[u], begin[v] + 1 });
+        return res;
+    }
+    pair<vector<int>, vector<array<int, 2>>> virtualTree(vector<int> nodes) {
+        sort(nodes.begin(), nodes.end(), [&](int u, int v) { return begin[u] < begin[v]; });
+        int siz = nodes.size();
+        for (int i = 0; i + 1 < siz; i++) {
+            nodes.push_back(getLCA(nodes[i], nodes[i + 1]));
+        }
+        sort(nodes.begin(), nodes.end(), [&](int u, int v) { return begin[u] < begin[v]; });
+        nodes.resize(unique(nodes.begin(), nodes.end()) - nodes.begin());
+        vector<array<int, 2>> edges;
+        vector<int> stk;
+        for (int u : nodes) {
+            while (!stk.empty() && !isProperDescendant(stk.back(), u)) {
+                stk.pop_back();
+            }
+            if (!stk.empty()) {
+                edges.push_back({stk.back(), u});
+            }
+            stk.push_back(u);
+        }
+        return {nodes, edges};
+    }
+};

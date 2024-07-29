@@ -1,0 +1,20 @@
+template <class T>
+vector<T> dijkstra(const vector<vector<pair<int, T>>> &adj, vector<T> dist) {
+    int n = adj.size();
+    priority_queue<pair<T, int>, vector<pair<T, int>>, greater<>> pq;
+    for (int u = 0; u < n; u++) {
+        pq.push({dist[u], u});
+    }
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d != dist[u]) continue;
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}

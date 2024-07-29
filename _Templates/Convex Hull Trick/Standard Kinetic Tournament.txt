@@ -1,0 +1,61 @@
+// n functions y=0x+0 by default, modifiable at any time, queries for maximum y, queries must be non-decreasing by x
+
+const long long INF = (long long)4e18;
+
+int sgn(long long x) {
+    if (x == 0) return 0;
+    return x > 0 ? +1 : -1;
+}
+
+long long rationalFloor(long long a, long long b) {
+    return a / b - (a % b != 0 && sgn(a) != sgn(b));
+}
+
+struct KineticTournament {
+    struct Node {
+        int i;
+        int a;
+        long long b;
+        long long melting_time;
+        Node() {}
+        Node(int i, int a, long long b, long long melting_time) : i(i), a(a), b(b), melting_time(melting_time) {}
+        long long operator()(int t) { return 1LL * a * t + b; }
+    };
+
+    int n, t;
+    vector<Node> nodes;
+
+    KineticTournament(int n, int t0) : n(n), t(t0), nodes(4 * n, Node(-1, 0, 0, INF)) {}
+
+    Node merge(Node x, Node y) {
+        if (x(t) < y(t)) swap(x, y);
+        Node res = x;
+        long long xy_melting_time = x.a == y.a ? INF : rationalFloor(y.b - x.b, x.a - y.a) + 1;
+        if (xy_melting_time <= t) xy_melting_time = INF;
+        res.melting_time = min({ x.melting_time, y.melting_time, xy_melting_time });
+        return res;
+    }
+
+    void modify(int i, int a, long long b, int idx, int l, int r) {
+        if (l + 1 == r) {
+            nodes[idx] = Node(i, a, b, INF);
+        } else {
+            int m = (l + r) >> 1;
+            if (i < m) modify(i, a, b, 2 * idx + 1, l, m);
+            else modify(i, a, b, 2 * idx + 2, m, r);
+            nodes[idx] = merge(nodes[2 * idx + 1], nodes[2 * idx + 2]);
+        }
+    }
+
+    void melt(int idx, int l, int r) {
+        if (t < nodes[idx].melting_time) return;
+        int m = (l + r) >> 1;
+        melt(2 * idx + 1, l, m);
+        melt(2 * idx + 2, m, r);
+        nodes[idx] = merge(nodes[2 * idx + 1], nodes[2 * idx + 2]);
+    }
+
+    void modify(int i, int a, long long b) { modify(i, a, b, 0, 0, n); }
+    void heaten(int t) { assert(t >= this->t); this->t = t; melt(0, 0, n); }
+    Node winner() { return nodes[0]; }
+};

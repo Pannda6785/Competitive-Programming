@@ -1,0 +1,83 @@
+struct AhoCorasick {
+    struct Node {
+        int p;
+        int c;
+        int cnt = 0;
+        array<int, 2> next = array<int, 2>{0, 0};
+        int link = 0;
+        array<int, 2> go = array<int, 2>{0, 0};
+        Node(int p = -1, int c = -1) : p(p), c(c) {}
+    };
+
+    vector<Node> trie;
+
+    AhoCorasick() : trie(1) {}
+
+    void add(vector<int> s) {
+        int u = 0;
+        for (int c : s) {
+            if (!trie[u].next[c]) {
+                trie[u].next[c] = trie.size();
+                trie.emplace_back(u, c);
+            }
+            u = trie[u].next[c];
+        }
+        trie[u].cnt++;
+    }
+
+    void add(vector<vector<int>> ss) {
+        for (vector<int> s : ss) {
+            add(s);
+        }
+    }
+
+    vector<int> q;
+    void build() {
+        int n = trie.size();
+        q.resize(n);
+        int cur = 0;
+        q[cur++] = 0;
+        for (int i = 0; i < n; i++) {
+            int u = q[i];
+            trie[u].link = u == 0 || trie[u].p == 0 ? 0 : trie[trie[trie[u].p].link].go[trie[u].c];
+            trie[u].cnt += trie[trie[u].link].cnt;
+            for (int c = 0; c < 2; c++) {
+                trie[u].go[c] = trie[u].next[c] ? trie[u].next[c] : u == 0 ? 0 : trie[trie[u].link].go[c];
+                if (trie[u].next[c]) {
+                    q[cur++] = trie[u].next[c];
+                }
+            }
+        }
+    }
+
+    int size() { return trie.size(); }
+    int link(int u) { return trie[u].link; }
+    int go(int u, int c) { return trie[u].go[c]; }
+    int cnt(int u) { return trie[u].cnt; }
+};
+
+struct AhoCorasickContainer {
+    vector<vector<vector<int>>> sss;
+    vector<AhoCorasick> ahos;
+    int status;
+    AhoCorasickContainer(int LOG) : sss(LOG), ahos(LOG), status(0) {}
+
+    void add(vector<vector<int>> ss, int i) {
+        if (status >> i & 1) {
+            ss.insert(ss.end(), sss[i].begin(), sss[i].end());
+            sss[i].clear();
+            ahos[i] = AhoCorasick();
+            status ^= 1 << i;
+            add(ss, i + 1);
+        } else {
+            ahos[i].add(ss);
+            ahos[i].build();
+            sss[i] = ss;
+            status ^= 1 << i;
+        }
+    }
+
+    void add(vector<int> s) {
+        add({s}, 0);
+    }
+};

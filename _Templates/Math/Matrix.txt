@@ -1,0 +1,51 @@
+const int P = (int)1e9 + 7;
+
+struct Matrix {
+    int n, m;
+    vector<vector<int>> a;
+
+    Matrix(int n, int m, int val = 0) : n(n), m(m), a(n, vector<int>(m, val)) {}
+
+    Matrix operator*(Matrix b) {
+        Matrix a = *this;
+        assert(a.m == b.n);
+        Matrix res(a.n, b.m);
+        for (int i = 0; i < a.n; i++) {
+            for (int k = 0; k < a.m; k++) {
+                for (int j = 0; j < b.m; j++) {
+                    res.a[i][j] = (res.a[i][j] + 1LL * a.a[i][k] * b.a[k][j]) % P;
+                }
+            }
+        }
+        return res;
+    }
+
+    Matrix I(int n) {
+        Matrix res(n, n);
+        for (int i = 0; i < n; i++) {
+            res.a[i][i] = 1;
+        }
+        return res;
+    }
+
+    Matrix operator^(long long b) {
+        Matrix a = *this;
+        assert(a.n == a.m);
+        Matrix res = I(a.n);
+        for (; b; b >>= 1, a = a * a) {
+            if (b & 1) {
+                res = res * a;
+            }
+        }
+        return res;
+    }
+
+    void print() {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                cout << a[i][j] << ' ';
+            }
+            cout << '\n';
+        }
+    }
+};

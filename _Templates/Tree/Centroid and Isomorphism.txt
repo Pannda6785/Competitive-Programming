@@ -1,0 +1,83 @@
+{
+    vector<int> siz(n);
+    auto getSize = [&](auto self, int u, int p) -> void {
+        siz[u] = 1;
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            self(self, v, u);
+            siz[u] += siz[v];
+        }
+    };
+    auto getCentroid = [&](auto self, int u, int p) -> int {
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            if (siz[v] > n / 2) return self(self, v, u);
+        }
+        return u;
+    };
+    getSize(getSize, 0, -1);
+    int cen0 = getCentroid(getCentroid, 0, -1);
+    int cen1 = -1;
+    getSize(getSize, cen0, -1);
+    for (int v : adj[cen0]) {
+        if (n % 2 == 0 && siz[v] == n / 2) {
+            cen1 = v;
+        }
+    }
+}
+
+{
+    map<vector<int>, int> mp;
+    int next_id = 0;
+    vector<int> h(n);
+    auto dfs = [&](auto self, int u, int p) -> void {
+        vector<int> childs;
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            self(self, v, u);
+            childs.push_back(v);
+        }
+        sort(childs.begin(), childs.end(), [&](int v0, int v1) { return h[v0] < h[v1]; });
+        adj[u] = childs;
+        vector<int> hshes;
+        for (int v : childs) hshes.push_back(h[v]);
+        if (!mp.count(hshes)) mp[hshes] = next_id++;
+        h[u] = mp[hshes];
+    };
+    dfs(dfs, cen0, cen1);
+    if (cen1 != -1) dfs(dfs, cen1, cen0);
+}
+
+// kinda outdated
+mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+{
+    map<vector<long long>, long long> mp;
+    auto getTreeHash = [&](int root, vector<vector<int>> adj) {
+        vector<long long> f(n);
+        function<void(int, int)> dfs = [&](int u, int p) {
+            vector<long long> fetch;
+            for (int v : adj[u]) {
+                if (v == p) continue;
+                dfs(v, u);
+                fetch.push_back(f[v]);
+            }
+            sort(fetch.begin(), fetch.end());
+            if (!mp.count(fetch)) mp[fetch] = rng();
+            f[u] = mp[fetch];
+        };
+        dfs(root, -1);
+        return f[root];
+    };
+    vector<int> cens0 = getCentroids(n, adj0);
+    vector<int> cens1 = getCentroids(n, adj1);
+    cen1.resize(1);
+    for (int c0 : cen0) {
+        for (int c1 : cen1) {
+            if (getTreeHash(c0, adj0) == getTreeHash(c1, adj1)) {
+                cout << "YES\n";
+                return;
+            }
+        }
+    }
+    cout << "NO\n";
+}

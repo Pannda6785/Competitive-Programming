@@ -1,0 +1,87 @@
+// uses SPFA, directed graph
+
+const long long INF = 3e18;
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+
+    vector<vector<array<int, 2>>> adj(n);
+    for (int i = 0; i < m; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        u--;
+        v--;
+        adj[u].push_back({ v, w });
+    }
+
+    vector<long long> dist(n);
+    vector<int> par(n);
+    queue<int> que;
+    vector<bool> in_queue(n);
+
+    for (int u = 0; u < n; u++) {
+        dist[u] = 0;
+        par[u] = -1;
+        que.push(u);
+        in_queue[u] = true;
+    }
+
+    auto detect = [&]() {
+        vector<bool> vis(n, false);
+        vector<bool> on_stk(n, false);
+        function<void(int)> dfs = [&](int u) {
+            vis[u] = true;
+            on_stk[u] = true;
+            int v = par[u];
+            if (v != -1) {
+                if (!vis[v]) {
+                    dfs(v);
+                } else if (on_stk[v]) {
+                    cout << "YES\n";
+                    vector<int> key = { u };
+                    while (v != u) {
+                        key.push_back(v);
+                        v = par[v];
+                    }
+                    key.push_back(u);
+                    reverse(key.begin(), key.end());
+                    for (int x : key) cout << x + 1 << ' ';
+                    cout << '\n';
+                    exit(0);
+                }
+            }
+            on_stk[u] = false;
+        };
+        for (int s = 0; s < n; s++) {
+            if (!vis[s]) {
+                dfs(s);
+            }
+        }
+    };
+
+    int ite = 0;
+    while (!que.empty()) {
+        int u = que.front();
+        que.pop();
+        in_queue[u] = false;
+
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                par[v] = u;
+                if (!in_queue[v]) {
+                    que.push(v);
+                    in_queue[v] = true;
+                }
+                if (++ite == n) {
+                    ite = 0;
+                    detect();
+                }
+            }
+        }
+    }
+
+    detect();
+    cout << "NO\n";
+}

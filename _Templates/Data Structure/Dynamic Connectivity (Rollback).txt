@@ -1,0 +1,125 @@
+typedef array<int, 2> edge;
+
+struct DSU {
+    int n;
+    vector<int> f, siz;
+    vector<vector<pair<int*, int>>> stk;
+
+    DSU(int n) : n(n), f(n), siz(n, 1) { iota(f.begin(), f.end(), 0); }
+
+    int leader(int u) {
+        while (u != f[u]) {
+            u = f[u];
+        }
+        return u;
+
+    }
+
+    bool add(edge e) {
+        stk.emplace_back();
+        int u = e[0], v = e[1];
+        u = leader(u);
+        v = leader(v);
+        if (u == v) return false;
+        if (siz[u] < siz[v]) swap(u, v);
+        stk.back().push_back({&siz[u], siz[u]});
+        stk.back().push_back({&f[v], f[v]});
+        stk.back().push_back({&n, n});
+        siz[u] += siz[v];
+        f[v] = u;
+        n--;
+        return true;
+    }
+
+    void rollback() {
+        for (pair<int*, int> p : stk.back()) {
+            *p.first = p.second;
+        }
+        stk.pop_back();
+    }
+
+    int count() {
+        return n;
+    }
+};
+
+struct SegmentTree {
+    int n, T;
+    vector<vector<edge>> seg;
+    DSU dsu;
+    vector<int> favor;
+
+    SegmentTree(int n, int T) : n(n), T(T), seg(4 * T), dsu(n), favor(T) {}
+
+    void add(int ql, int qr, edge e, int idx, int l, int r) {
+        if (r <= ql || qr <= l) return;
+        if (ql <= l && r <= qr) {
+            seg[idx].push_back(e);
+            return;
+        }
+        int m = (l + r) >> 1;
+        add(ql, qr, e, 2 * idx + 1, l, m);
+        add(ql, qr, e, 2 * idx + 2, m, r);
+    }
+
+    void dfs(int idx, int l, int r) {
+        for (edge e : seg[idx]) {
+            dsu.add(e);
+        }
+        if (l + 1 == r) {
+            favor[l] = dsu.count();
+        } else {
+            int m = (l + r) >> 1;
+            dfs(2 * idx + 1, l, m);
+            dfs(2 * idx + 2, m, r);
+        }
+        for (edge e : seg[idx]) {
+            dsu.rollback();
+        }
+    }
+
+    void add(int ql, int qr, edge e) { add(ql, qr, e, 0, 0, T); }
+    vector<int> work() { dfs(0, 0, T); return favor; }
+};
+
+int main() {
+    int n, m, q;
+    cin >> n >> m >> q;
+
+    map<edge, int> mp;
+
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        u--;
+        v--;
+        if (u > v) swap(u, v);
+        mp[{u, v}] = 0;
+    }
+
+    SegmentTree seg(n, q + 1);
+
+    for (int t = 1; t <= q; t++) {
+        int type, u, v;
+        cin >> type >> u >> v;
+        u--;
+        v--;
+        if (u > v) swap(u, v);
+        if (mp.count({u, v})) {
+            seg.add(mp[{u, v}], t, {u, v});
+            mp.erase({u, v});
+        } else {
+            mp[{u, v}] = t;
+        }
+    }
+
+    for (pair<edge, int> p : mp) {
+        seg.add(p.second, q + 1, p.first);
+    }
+
+    vector<int> answer = seg.work();
+    for (int t = 0; t <= q; t++) {
+        cout << answer[t] << ' ';
+    }
+    cout << '\n';
+}

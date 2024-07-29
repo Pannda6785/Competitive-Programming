@@ -1,0 +1,62 @@
+// add an arithmetic progression to a range, range summation
+
+struct SegmentTree {
+    struct Node {
+        long long sum = 0;
+        long long a = 0, b = 0;
+        int ln = 0, rn = 0;
+    };
+
+    int C;
+    vector<Node> nodes;
+
+    SegmentTree(int C) : C(C), nodes(2) {}
+
+    void apply(int &idx, int l, int r, long long a, long b) {
+        if (idx == 0) {
+            idx = nodes.size();
+            nodes.emplace_back();
+        }
+        nodes[idx].sum += a * (r - l) + b * (r - l) * (r - l - 1) / 2;
+        nodes[idx].a += a;
+        nodes[idx].b += b;
+    }
+
+    void down(int &idx, int l, int r) {
+        if (idx != 0) {
+            int m = (l + r) >> 1;
+            Node goat = nodes[idx];
+            apply(goat.ln, l, m, nodes[idx].a, nodes[idx].b);
+            apply(goat.rn, m, r, nodes[idx].b * (m - l) + nodes[idx].a, nodes[idx].b);
+            goat.a = 0;
+            goat.b = 0;
+            nodes[idx] = goat;
+        } else {
+            idx = nodes.size();
+            nodes.emplace_back();
+        }
+    }
+
+    void add(int ql, int qr, long long a, long long b, int &idx, int l, int r) {
+        if (r <= ql || qr <= l) return;
+        if (ql <= l && r <= qr) return apply(idx, l, r, b * (l - ql) + a, b);
+        down(idx, l, r);
+        int m = (l + r) >> 1;
+        Node goat = nodes[idx];
+        add(ql, qr, a, b, goat.ln, l, m);
+        add(ql, qr, a, b, goat.rn, m, r);
+        goat.sum = nodes[goat.ln].sum + nodes[goat.rn].sum;
+        nodes[idx] = goat;
+    }
+
+    long long getSum(int ql, int qr, int idx, int l, int r) {
+        if (r <= ql || qr <= l) return 0LL;
+        if (ql <= l && r <= qr) return nodes[idx].sum;
+        down(idx, l, r);
+        int m = (l + r) >> 1;
+        return getSum(ql, qr, nodes[idx].ln, l, m) + getSum(ql, qr, nodes[idx].rn, m, r);
+    }
+
+    void add(int ql, int qr, long long a, long long b) { int goat = 1; add(ql, qr, a, b, goat, 0, C); }
+    long long getSum(int ql, int qr) { return getSum(ql, qr, 1, 0, C); }
+};
