@@ -11,7 +11,7 @@ int solveLinear(vector<vector<T>> &A, vector<T> &b, vector<T> &x) { // return ra
         int br, bc;
         for (int r = i; r < n; r++) {
             for (int c = i; c < m; c++) {
-                if (A[r][c] != 0) { // if dealing with floating point, replace with "A[r][c] > bv" to alleviate precision issues
+                if (A[r][c] != 0) { // if dealing with floating point, replace with "abs(A[r][c]) > bv" to alleviate precision issues
                     bv = A[r][c];
                     br = r;
                     bc = c;
@@ -20,7 +20,7 @@ int solveLinear(vector<vector<T>> &A, vector<T> &b, vector<T> &x) { // return ra
         }
         if (bv == 0) {
             for (int r = i; r < n; r++) {
-                if (b[r] != 0) return -1;
+                if (b[r] != 0) return -1; // if dealing with floating point, replace with "abs(b[r]) > EPSILON" to alleviate precision issues
             }
             break;
         }
