@@ -62,6 +62,21 @@ struct Tree {
         if (depth[u] > depth[v]) swap(u, v);
         return u;
     }
+    int getDist(int u, int v) {
+        return depth[u] + depth[v] - 2 * depth[getLCA(u, v)];
+    }
+    int getIntermediate(int heavy, int u) {
+        assert(heavy != u);
+        if (heavy != getLCA(u, heavy)) {
+            return parent[heavy];
+        }
+        while (head[u] != head[heavy]) {
+            u = head[u];
+            if (parent[u] == heavy) return u;
+            u = parent[u];
+        }
+        return inv_begin[begin[heavy] + 1];
+    }
     int getNode(int u) { // position in the Euler tour
         return begin[u];
     }
