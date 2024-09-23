@@ -1,6 +1,6 @@
 struct Tree {
     vector<int> depth, parent, siz, head, begin, end, inv_begin;
-    Tree(const int &n, const vector<vector<int>> &adj) : depth(n), parent(n), siz(n), head(n), begin(n), end(n), inv_begin(n) {
+    Tree(const int &n, const vector<vector<int>> &adj, int root = 0) : depth(n), parent(n), siz(n), head(n), begin(n), end(n), inv_begin(n) {
         auto dfs = [&](auto self, int u, int p) -> void {
             depth[u] = p == -1 ? 0 : depth[p] + 1;
             parent[u] = p;
@@ -11,7 +11,7 @@ struct Tree {
                 siz[u] += siz[v];
             }
         };
-        dfs(dfs, 0, -1);
+        dfs(dfs, root, -1);
         int tim = 0;
         auto decompose = [&](auto self, int u, int h) -> void {
             head[u] = h;
@@ -29,7 +29,7 @@ struct Tree {
             }
             end[u] = tim;
         };
-        decompose(decompose, 0, 0);
+        decompose(decompose, root, root);
     }
     int getDepth(int u) {
         return depth[u];
@@ -37,7 +37,7 @@ struct Tree {
     int getParent(int u) {
         return parent[u];
     }
-    int getAncestor(int u, int k) { // -1 if out of tree
+    int getAncestor(int u, int k) { // returns the kth ancestor of u, -1 if out of tree. For example: 0th is u, 1st is parent(u),...
         while (k > 0 && u != -1) {
             if (k > depth[u] - depth[head[u]]) {
                 k -= depth[u] - depth[head[u]] + 1;
@@ -65,7 +65,7 @@ struct Tree {
     int getDist(int u, int v) {
         return depth[u] + depth[v] - 2 * depth[getLCA(u, v)];
     }
-    int getIntermediate(int heavy, int u) {
+    int getIntermediate(int heavy, int u) { // returns the first node that isn't 'heavy' on the path from 'heavy' to 'u'
         assert(heavy != u);
         if (heavy != getLCA(u, heavy)) {
             return parent[heavy];
@@ -77,16 +77,16 @@ struct Tree {
         }
         return inv_begin[begin[heavy] + 1];
     }
-    int getNode(int u) { // position in the Euler tour
+    int getNode(int u) { // maps nodes -> positions in the Euler tour
         return begin[u];
     }
-    int getInvNode(int p) {
+    int getInvNode(int p) { // maps Euler tour positions -> nodes
         return inv_begin[p];
     }
-    array<int, 2> getSubtree(int u) {
+    array<int, 2> getSubtree(int u) { // returns the subtree rooted at u, presented by the range of positions in the Euler tour
         return array<int, 2>{ begin[u], end[u] };
     }
-    vector<array<int, 2>> getPath(int u, int v) {
+    vector<array<int, 2>> getPath(int u, int v) { // returns the path [u, v], presented by a list of O(log) ranges that are the positions in the Euler tour
         vector<array<int, 2>> res;
         for (; head[u] != head[v]; v = parent[head[v]]) {
             if (depth[head[u]] > depth[head[v]]) swap(u, v);
@@ -96,7 +96,7 @@ struct Tree {
         res.push_back({ begin[u], begin[v] + 1 });
         return res;
     }
-    pair<vector<int>, vector<array<int, 2>>> virtualTree(vector<int> nodes) {
+    pair<vector<int>, vector<array<int, 2>>> virtualTree(vector<int> nodes) { // returns a pair: the list of nodes in the virtual tree (at most 2*|nodes|), and the list of edges of that virtual tree
         sort(nodes.begin(), nodes.end(), [&](int u, int v) { return begin[u] < begin[v]; });
         int siz = nodes.size();
         for (int i = 0; i + 1 < siz; i++) {
