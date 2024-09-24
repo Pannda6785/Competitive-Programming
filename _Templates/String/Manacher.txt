@@ -1,12 +1,34 @@
-vector<int> getManacher(string _s) { // return 2n-1 numbers, the i-th of these is the length of the longest palindrome centered at that position, or 0 if doesn't exist
-    string s = "$";
-    for (char c : _s) {
-        s += c;
-        s += '#';
-    }
-    s.pop_back();
-    s += '&';
-    int n = s.length();
+/*
+    Explaination:
+        C is the type of the alphabet
+            the operator == must be defined
+        V is an std::vector-like class over C that has:
+            the constructor V(int n, C default_value) that constructs an instance of V of size n
+            the method size()
+            the operator [] for both reading and writing
+        return 2n-1 numbers, the i-th of which is the length of the longest palindrome centered at that position (can be 0 for odd i's)
+    Usage examples:
+    1.
+        string s(10, 'x');
+        vector<int> result_s = getManacher(s);
+    2.
+        vector<int> v(10);
+        iota(v.begin(), v.end(), 0);
+        vector<int> result_v = getManacher<vector<int>, int>(v, -1, -2, -3);
+*/
+template <class V = string, class C = char>
+vector<int> getManacher(V _s, C dif0 = '$', C dif1 = '#', C dif2 = '&') {
+    V s = [&]() -> V {
+        int _n = _s.size();
+        V s(2 * _n + 1, dif1);
+        s[0] = dif0;
+        for (int i = 0; i < _n; i++) {
+            s[2 * i + 1] = _s[i];
+        }
+        s[2 * _n] = dif2;
+        return s;
+    }();
+    int n = s.size();
     vector<int> z(n, 1);
     for (int i = 1, l = 0, r = 0; i < n - 1; i++) {
         if (i < r) {
@@ -15,12 +37,10 @@ vector<int> getManacher(string _s) { // return 2n-1 numbers, the i-th of these i
         while (s[i - z[i]] == s[i + z[i]]) {
             z[i]++;
         }
-
         if (i + z[i] > r) {
             r = i + z[i];
             l = i - z[i] + 1;
         }
-
         if (i & 1) {
             z[i] = (z[i] - 1) / 2 * 2 + 1;
         } else {
