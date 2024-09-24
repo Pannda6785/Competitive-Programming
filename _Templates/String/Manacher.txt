@@ -6,6 +6,8 @@
             the constructor V(int n, C default_value) that constructs an instance of V of size n
             the method size()
             the operator [] for both reading and writing
+        _s is the string (V) to be calculated on
+        dif0, dif1, dif2 are three characters (C's) that are different and do appear in the string
         return 2n-1 numbers, the i-th of which is the length of the longest palindrome centered at that position (can be 0 for odd i's)
     Usage examples:
     1.
