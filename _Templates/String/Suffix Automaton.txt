@@ -42,6 +42,25 @@ struct SuffixAutomaton {
     }
 
     int size() { return nodes.size(); }
+    int len(int u) { return nodes[u].len; }
     int link(int u) { return nodes[u].link; }
     int next(int u, int c) { return nodes[u].next[c]; }
+    void go(int &u, int &len, int c) {
+        if (next(u, c)) {
+            len++;
+            u = next(u, c);
+        } else {
+            while (u != -1 && !next(u, c)) {
+                u = link(u);
+            }
+            if (u == -1) {
+                u = 0;
+                len = 0;
+            } else {
+                len = nodes[u].len;
+                len++;
+                u = next(u, c);
+            }
+        }
+    }
 };
