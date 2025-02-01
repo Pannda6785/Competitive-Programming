@@ -75,25 +75,25 @@ struct PersistentLazySegmentTree {
     }
 
     Info rangeQuery(int root, int ql, int qr) {
-        auto dfs = [&](auto self, int p, int l, int r) -> Info {
+        auto dfs = [&](auto self, int p, int l, int r, Tag t) -> Info {
             if (r <= ql || qr <= l) {
                 return Info();
             }
             if (ql <= l && r <= qr) {
-                return nodes[p].info;
+                Info info = nodes[p].info;
+                info.apply(t);
+                return info;
             }
-            newNode(nodes[p].ln, nodes[p].ln);
-            newNode(nodes[p].rn, nodes[p].rn);
-            push(p);
+            t.apply(nodes[p].tag);
             int m = (l + r) >> 1;
-            return self(self, nodes[p].ln, l, m) + self(self, nodes[p].rn, m, r);
+            return self(self, nodes[p].ln, l, m, t) + self(self, nodes[p].rn, m, r, t);
         };
-        return dfs(dfs, root, 0, n);
+        return dfs(dfs, root, 0, n, Tag());
     }
 
 };
 
-struct Tag { 
+struct Tag {
     long long add = 0;
     void apply(const Tag &t) & {
         add += t.add;
