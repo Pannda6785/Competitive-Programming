@@ -1,0 +1,111 @@
+template <class Info, class Tag>
+struct PersistentLazySegmentTree {
+    struct Node {
+        Info info = Info();
+        Tag tag = Tag();
+        int ln = 0, rn = 0;
+    };
+    int n;
+    vector<Node> nodes;
+
+    PersistentLazySegmentTree() : n(0) {}
+
+    PersistentLazySegmentTree(int n, Info def = Info()) {
+        init(vector<Info>(n, def));
+    }
+
+    PersistentLazySegmentTree(vector<Info> a) {
+        init(a);
+    }
+
+    void init(vector<Info> a) {
+        n = a.size();
+        nodes.resize(4 << __lg(n));
+        auto build = [&](auto self, int p, int l, int r) -> void {
+            if (r - l == 1) {
+                nodes[p].info = a[l];
+            } else {
+                int m = (l + r) >> 1;
+                nodes[p].ln = 2 * p;
+                nodes[p].rn = 2 * p + 1;
+                self(self, nodes[p].ln, l, m);
+                self(self, nodes[p].rn, m, r);
+                pull(p);
+            }
+        };
+        build(build, 1, 0, n);
+    }
+
+    void pull(int p) {
+        nodes[p].info = nodes[nodes[p].ln].info + nodes[nodes[p].rn].info;
+    }
+    void apply(int p, const Tag &t) {
+        nodes[p].info.apply(t);
+        nodes[p].tag.apply(t);
+    }
+    void push(int p) {
+        apply(nodes[p].ln, nodes[p].tag);
+        apply(nodes[p].rn, nodes[p].tag);
+        nodes[p].tag = Tag();
+    }
+    void newNode(int base, int &aug) {
+        aug = nodes.size();
+        nodes.push_back(nodes[base]);
+    }
+
+    void rangeApply(int base_root, int &root, int ql, int qr, const Tag &t) {
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            if (r <= ql || qr <= l) {
+                return;
+            }
+            if (ql <= l && r <= qr) {
+                apply(p, t);
+                return;
+            }
+            newNode(nodes[p].ln, nodes[p].ln);
+            newNode(nodes[p].rn, nodes[p].rn);
+            push(p);
+            int m = (l + r) >> 1;
+            self(self, nodes[p].ln, l, m);
+            self(self, nodes[p].rn, m, r);
+            pull(p);
+        };
+        newNode(base_root, root);
+        dfs(dfs, root, 0, n);
+    }
+
+    Info rangeQuery(int root, int ql, int qr) {
+        auto dfs = [&](auto self, int p, int l, int r) -> Info {
+            if (r <= ql || qr <= l) {
+                return Info();
+            }
+            if (ql <= l && r <= qr) {
+                return nodes[p].info;
+            }
+            newNode(nodes[p].ln, nodes[p].ln);
+            newNode(nodes[p].rn, nodes[p].rn);
+            push(p);
+            int m = (l + r) >> 1;
+            return self(self, nodes[p].ln, l, m) + self(self, nodes[p].rn, m, r);
+        };
+        return dfs(dfs, root, 0, n);
+    }
+
+};
+
+struct Tag { // adds the line ai + b to those i in [l, r)
+    long long add = 0;
+    void apply(const Tag &t) & {
+        add += t.add;
+    }
+};
+
+struct Info {
+    long long mn = 1e18;
+    void apply(const Tag &t) & {
+        mn += t.add;
+    }
+    Info operator+(const Info &b) {
+        return { min(mn, b.mn) };
+    }
+};
