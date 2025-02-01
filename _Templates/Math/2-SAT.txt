@@ -1,63 +1,71 @@
+/*
+    n variables, SAT of disjunction clauses, ie. (-x or y) and (z or x)
+    positive is [0, n)
+    negative is [-n, 0)
+*/
 struct TwoSAT {
-    int n; // number of variables
+    int n;
     vector<vector<int>> adj;
 
-    TwoSAT(int n) : n(n), adj(n + n) {}
+    TwoSAT() : n(0) {}
+    TwoSAT(int n) : n(n), adj(2 * n) {}
 
-    void add(int sgn_u, int u, int sgn_v, int v) { // sgn = -1 if negating, +1 otherwise, add a condition (sgn_u * u OR sgn_v * v)
-        u = sgn_u == +1 ? 2 * u : 2 * u + 1;
-        v = sgn_v == +1 ? 2 * v : 2 * v + 1;
-        adj[u ^ 1].push_back(v);
-        adj[v ^ 1].push_back(u);
+    int neg(int x) {
+        if (x >= n) return x - n;
+        return x + n;
+    }
+
+    void addClause(int x, int y) {
+        x += n;
+        y += n;
+        adj[neg(x)].push_back(y);
+        adj[neg(y)].push_back(x);
     }
 
     bool solve(vector<int> &solution) {
-        solution.resize(n);
-
-        vector<int> num(n + n, -1), low(n + n);
-        int tim = 0;
-        vector<int> stk;
-        vector<bool> in_stk(n + n, false);
-        vector<int> comp(n + n, -1);
-        int cnt = 0;
-
-        function<void(int)> dfs = [&](int u) {
-            num[u] = low[u] = tim++;
-            stk.push_back(u);
-            in_stk[u] = true;
-            for (int v : adj[u]) {
-                if (num[v] == -1) {
-                    dfs(v);
-                    low[u] = min(low[u], low[v]);
-                } else if (in_stk[v]) {
-                    low[u] = min(low[u], num[v]);
+        vector<int> comp = [&]() -> vector<int> {
+            vector<int> comp(2 * n, -1);
+            int comp_idx = 0;
+            vector<int> num(2 * n, -1), low(2 * n);
+            int tim = 0;
+            vector<int> stk;
+            vector<bool> on_stk(2 * n, false);
+            auto dfs = [&](auto self, int u) -> void {
+                num[u] = low[u] = tim++;
+                stk.push_back(u);
+                on_stk[u] = true;
+                for (int v : adj[u]) {
+                    if (num[v] == -1) {
+                        self(self, v);
+                        low[u] = min(low[u], low[v]);
+                    } else if (on_stk[v]) {
+                        low[u] = min(low[u], num[v]);
+                    }
+                }
+                if (num[u] == low[u]) {
+                    int w;
+                    do {
+                        w = stk.back();
+                        stk.pop_back();
+                        on_stk[w] = false;
+                        comp[w] = comp_idx;
+                    } while (w != u);
+                    comp_idx++;
+                }
+            };
+            for (int u = 0; u < 2 * n; u++) {
+                if (num[u] == -1) {
+                    dfs(dfs, u);
                 }
             }
-            if (num[u] == low[u]) {
-                int v;
-                do {
-                    v = stk.back();
-                    stk.pop_back();
-                    in_stk[v] = false;
-                    comp[v] = cnt;
-                } while (v != u);
-                cnt++;
-            }
-        };
+            return comp;
+        }();
 
-        for (int u = 0; u < n + n; u++) {
-            if (num[u] == -1) {
-                dfs(u);
-            }
+        solution.resize(n);
+        for (int u = 0; u < n; u++) {
+            if (comp[u] == comp[neg(u)]) return false;
+            solution[u] = comp[u] > comp[neg(u)] ? +1 : -1;
         }
-
-        for (int i = 0; i < n; i++) {
-            int u = 2 * i;
-            int nu = 2 * i + 1;
-            if (comp[u] == comp[nu]) return false;
-            solution[i] = comp[u] < comp[nu] ? +1 : -1;
-        }
-
         return true;
     }
 };
