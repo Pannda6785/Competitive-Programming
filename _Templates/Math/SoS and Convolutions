@@ -1,0 +1,83 @@
+template<class T>
+void FST(vector<T> &a, bool inv, int operation) { // operation: 0 for AND, 1 for OR, 2 for XOR
+	for (int n = a.size(), step = 1; step < n; step *= 2) {
+		for (int i = 0; i < n; i += 2 * step) {
+            for (int j = i; j < i + step; j++) {
+                T &u = a[j], &v = a[j + step];
+                if (operation == 0) tie(u, v) = inv ? pair<T, T>(v - u, u) : pair<T, T>(v, u + v); // AND
+                if (operation == 1) tie(u, v) = inv ? pair<T, T>(v, u - v) : pair<T, T>(u + v, u); // OR
+                if (operation == 2) tie(u, v) = pair<T, T>(u + v, u - v); // XOR
+            }
+		}
+	}
+    if (operation == 2 && inv) for (T& x : a) x /= T(a.size()); // XOR only
+}
+
+template<class T>
+vector<T> aoxConv(vector<T> a, vector<T> b, int operation) { // operation: 0 for AND, 1 for OR, 2 for XOR
+	FST(a, false, operation); FST(b, false, operation);
+	for (int i = 0; i < a.size(); i++) a[i] *= b[i];
+	FST(a, true, operation);
+	return a;
+}
+
+template<class T>
+void ZT(vector<T> &a, bool inv) { // zeta-transform
+    for (int n = a.size(), i = 0, pw = 1; pw < n; pw *= 2, i++) {
+        for (int mask = 0; mask < n; mask++) {
+            if (mask >> i & 1) {
+                if (!inv) {
+                    a[mask] += a[mask ^ (1 << i)];
+                } else {
+                    a[mask] -= a[mask ^ (1 << i)];
+                }
+            }
+        }
+    }
+}
+
+template<class T>
+void RZT(vector<T> &a, bool inv) { // reverse zeta-transform (supermask)
+    for (int n = a.size(), i = 0, pw = 1; pw < n; pw *= 2, i++) {
+        for (int mask = n - 1; mask >= 0; mask--) {
+            if (!(mask >> i & 1)) {
+                if (!inv) {
+                    a[mask] += a[mask ^ (1 << i)];
+                } else {
+                    a[mask] -= a[mask ^ (1 << i)];
+                }
+            }
+        }
+    }
+}
+
+template<class T>
+vector<T> subsetConv(vector<T> a, vector<T> b) {
+    int n = a.size();
+    int k = 31 - __builtin_clz(n);
+    assert((1 << k) == n);
+    vector<vector<T>> ahat(k + 1, vector<T>(n, T()));
+    vector<vector<T>> bhat(k + 1, vector<T>(n, T()));
+    for (int mask = 0; mask < n; mask++) {
+        ahat[__builtin_popcount(mask)][mask] = a[mask];
+        bhat[__builtin_popcount(mask)][mask] = b[mask];
+    }
+    for (int i = 0; i <= k; i++) {
+        ZT(ahat[i], false);
+        ZT(bhat[i], false);
+    }
+    vector<vector<T>> h(k + 1, vector<T>(n, T()));
+    for (int mask = 0; mask < n; mask++) {
+        for (int i = 0; i <= k; i++) {
+            for (int j = 0; j <= i; j++) {
+                h[i][mask] += ahat[j][mask] * bhat[i - j][mask];
+            }
+        }
+    }
+    for (int i = 0; i <= k; i++) {
+        ZT(h[i], true);
+    }
+    vector<T> res(n, T());
+    for (int mask = 0; mask < n; mask++) res[mask] = h[__builtin_popcount(mask)][mask];
+    return res;
+}
