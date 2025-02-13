@@ -69,3 +69,204 @@ struct Tournament {
     void heaten(int dt) { apply(0, dt); }
     Node winner() { return nodes[0]; }
 };
+
+
+
+//========================================================================================================
+// OR THIS a3 must = 0, because I don't know how solveCubic works
+//========================================================================================================
+
+template<class Info, class Tag>
+struct LazySegmentTree {
+    int n;
+    vector<Info> info;
+    vector<Tag> tag;
+    LazySegmentTree() : n(0) {}
+    LazySegmentTree(int n_, Info v_ = Info()) {
+        init(n_, v_);
+    }
+    template<class T>
+    LazySegmentTree(vector<T> init_) {
+        init(init_);
+    }
+    void init(int n_, Info v_ = Info()) {
+        init(vector<Info>(n_, v_));
+    }
+    template<class T>
+    void init(vector<T> init_) {
+        n = init_.size();
+        info.assign(4 << __lg(n), Info());
+        tag.assign(4 << __lg(n), Tag());
+        function<void(int, int, int)> build = [&](int p, int l, int r) {
+            if (r - l == 1) {
+                info[p] = init_[l];
+                return;
+            }
+            int m = (l + r) / 2;
+            build(2 * p, l, m);
+            build(2 * p + 1, m, r);
+            pull(p);
+        };
+        build(1, 0, n);
+    }
+    void pull(int p) {
+        info[p] = info[2 * p] + info[2 * p + 1];
+    }
+    void apply(int p, const Tag &v) {
+        info[p].apply(v);
+        tag[p].apply(v);
+    }
+    void push(int p) {
+        apply(2 * p, tag[p]);
+        apply(2 * p + 1, tag[p]);
+        tag[p] = Tag();
+    }
+    void modify(int p, int l, int r, int x, const Info &v) {
+        if (r - l == 1) {
+            info[p] = v;
+            return;
+        }
+        int m = (l + r) / 2;
+        push(p);
+        if (x < m) {
+            modify(2 * p, l, m, x, v);
+        } else {
+            modify(2 * p + 1, m, r, x, v);
+        }
+        pull(p);
+    }
+    void modify(int p, const Info &v) {
+        modify(1, 0, n, p, v);
+    }
+    Info rangeQuery(int p, int l, int r, int x, int y) {
+        if (l >= y || r <= x) {
+            return Info();
+        }
+        if (l >= x && r <= y) {
+            return info[p];
+        }
+        int m = (l + r) / 2;
+        push(p);
+        return rangeQuery(2 * p, l, m, x, y) + rangeQuery(2 * p + 1, m, r, x, y);
+    }
+    Info rangeQuery(int l, int r) {
+        return rangeQuery(1, 0, n, l, r);
+    }
+    void rangeApply(int p, int l, int r, int x, int y, const Tag &v) {
+        if (l >= y || r <= x) {
+            return;
+        }
+        if (l >= x && r <= y && v.dt < info[p].melting_dt) {
+            apply(p, v);
+            return;
+        }
+        int m = (l + r) / 2;
+        push(p);
+        rangeApply(2 * p, l, m, x, y, v);
+        rangeApply(2 * p + 1, m, r, x, y, v);
+        pull(p);
+    }
+    void rangeApply(int l, int r, const Tag &v) {
+        return rangeApply(1, 0, n, l, r, v);
+    }
+};
+
+vector<long double> solveCubic(long long a, long long b, long long c, long long d) {
+    const long double EPSILON = 1e-7;
+    auto isZero = [&](long double x) -> bool {
+        return abs(x) < EPSILON;
+    };
+
+    vector<long double> realRoots;
+
+    // Convert the cubic equation into a depressed cubic form
+    if (d == 0) {
+        // If d = 0, it's a quadratic equation
+        if (c == 0) {
+            // If c = 0, it's a linear equation
+            if (b != 0) {
+                realRoots.push_back(-static_cast<long double>(a) / b);
+            }
+        } else {
+            // Solve quadratic equation: c*x^2 + b*x + a = 0
+            long double discriminant = b*b - 4*c*a;
+            if (discriminant >= EPSILON) {
+                complex<long double> root1 = (-(complex<long double>)b + sqrt(complex<long double>(discriminant))) / (complex<long double>)(2*c);
+                complex<long double> root2 = (-(complex<long double>)b - sqrt(complex<long double>(discriminant))) / (complex<long double>)(2*c);
+                if (isZero(root1.imag())) realRoots.push_back(root1.real());
+                if (isZero(root2.imag())) realRoots.push_back(root2.real());
+            } else if (isZero(discriminant)) {
+                realRoots.push_back(-(long double)b / (long double)(2*c));
+            }
+        }
+        return realRoots;
+    }
+
+    // Normalize coefficients for a depressed cubic
+    long double delta0 = b*b - 3*c*d;
+    long double delta1 = 2*b*b*b - 9*b*c*d + 27*a*d*d;
+
+    // Calculate the discriminant of the cubic
+    long double discriminant = delta1*delta1 - 4*delta0*delta0*delta0;
+
+    complex<long double> C = pow((delta1 + sqrt(complex<long double>(discriminant))) / (long double)2, 1.0/3.0);
+
+    complex<long double> omega1(-0.5, sqrt(3)/2); // Cube root of unity
+    complex<long double> omega2(-0.5, -sqrt(3)/2);
+
+    // Cardano's method for the three roots
+    complex<long double> root1 = -1.0 / ((long double)3 * d) * ((complex<long double>)b + C + delta0 / C);
+    complex<long double> root2 = -1.0 / ((long double)3 * d) * ((complex<long double>)b + omega1 * C + delta0 / (omega1 * C));
+    complex<long double> root3 = -1.0 / ((long double)3 * d) * ((complex<long double>)b + omega2 * C + delta0 / (omega2 * C));
+
+    // Store only real roots
+    if (isZero(root1.imag())) realRoots.push_back(root1.real());
+    if (isZero(root2.imag())) realRoots.push_back(root2.real());
+    if (isZero(root3.imag())) realRoots.push_back(root3.real());
+
+    return realRoots;
+}
+
+struct Tag {
+    int dt = 0;
+    void apply(const Tag &t) & {
+        dt += t.dt;
+    }
+};
+
+constexpr int INFT = 1e5 + 10;
+struct Info {
+    int a0 = 1e6, a1 = 0, a2 = 0, a3 = 0;
+    int t = 0;
+    int melting_dt = INFT;
+    long long eval() const { return a0 + 1LL * a1 * t + 1LL * a2 * t * t + 1LL * a3 * t * t * t; }
+    array<long long, 4> getPoly() const {
+        long long x = t;
+        return {a0 + a1 * x + a2 * x * x + a3 * x * x * x,
+                a1 + 2 * a2 * x + 3 * a3 * x * x,
+                a2 + 3 * a3 * x,
+                a3 };
+    }
+    void apply(const Tag &tag) & {
+        assert(tag.dt < melting_dt);
+        t += tag.dt;
+        melting_dt -= tag.dt;
+    }
+    Info operator+(const Info &b) {
+        Info res;
+        Info x = *this;
+        Info y = b;
+        if (x.eval() > y.eval()) swap(x, y);
+        res = x;
+        auto [X0, X1, X2, X3] = x.getPoly();
+        auto [Y0, Y1, Y2, Y3] = y.getPoly();
+        vector<long double> roots = solveCubic(X0 - Y0, X1 - Y1, X2 - Y2, X3 - Y3);
+        long double dt = INFT;
+        const long double EPS = 1e-6;
+        for (long double r : roots) {
+            if (r > -EPS) dt = min(dt, r);
+        }
+        res.melting_dt = min({ x.melting_dt, y.melting_dt, (int)(floor(dt + EPS) + 1.5) });
+        return res;
+    }
+};
