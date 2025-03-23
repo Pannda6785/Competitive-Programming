@@ -1,93 +1,102 @@
-typedef array<int, 2> edge;
+#include <bits/stdc++.h>
+using namespace std;
 
-struct DSU {
-    int n;
-    vector<int> f, siz;
-    vector<vector<pair<int*, int>>> stk;
+template<class DS, class E, class Q, class R> // DS supports add(E) -> void, query(Q) -> R, rollback() -> void
+struct OfflineDynamic {
+    int T;
+    vector<vector<E>> seg;
 
-    DSU(int n) : n(n), f(n), siz(n, 1) { iota(f.begin(), f.end(), 0); }
+    OfflineDynamic(int T) : T(T), seg(4 << __lg(T)) {}
 
-    int leader(int u) {
-        while (u != f[u]) {
-            u = f[u];
-        }
-        return u;
-
+    void add(int ql, int qr, E e) { // O(logT)
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            if (r <= ql || qr <= l) return;
+            if (ql <= l && r <= qr) {
+                seg[p].push_back(e);
+                return;
+            }
+            int m = (l + r) >> 1;
+            self(self, 2 * p, l, m);
+            self(self, 2 * p + 1, m, r);
+        };
+        dfs(dfs, 1, 0, T);
     }
 
-    bool add(edge e) {
-        stk.emplace_back();
-        int u = e[0], v = e[1];
+    vector<R> work(DS ds, vector<Q> queries) { // O(T) * T(query) + O(n) * (T(add) + T(rollback))
+        vector<R> res(T);
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            for (const E &e : seg[p]) {
+                ds.add(e);
+            }
+            if (l + 1 == r) {
+                res[l] = ds.query(queries[l]);
+            } else {
+                int m = (l + r) >> 1;
+                self(self, 2 * p, l, m);
+                self(self, 2 * p + 1, m, r);
+            }
+            for (int ite = seg[p].size(); ite >= 1; ite--) {
+                ds.rollback();
+            }
+        };
+        dfs(dfs, 1, 0, T);
+        return res;
+    }
+};
+
+struct DSU {
+    int cnt;
+    vector<int> f;
+    vector<int> siz;
+    vector<vector<pair<int*, int>>> stacks;
+
+    DSU(int n) : cnt(n), f(n), siz(n, 1) { iota(f.begin(), f.end(), 0); }
+
+    int leader(int u) {
+        while (f[u] != u) u = f[u];
+        return u;
+    }
+
+    bool add(array<int, 2> edge) {
+        auto [u, v] = edge;
+        stacks.emplace_back();
         u = leader(u);
         v = leader(v);
         if (u == v) return false;
         if (siz[u] < siz[v]) swap(u, v);
-        stk.back().push_back({&siz[u], siz[u]});
-        stk.back().push_back({&f[v], f[v]});
-        stk.back().push_back({&n, n});
+        stacks.back().push_back({ &siz[u], siz[u] });
+        stacks.back().push_back({ &f[v], f[v] });
+        stacks.back().push_back({ &cnt, cnt });
         siz[u] += siz[v];
         f[v] = u;
-        n--;
+        cnt--;
         return true;
     }
 
+    int query(int goat = 0) {
+        return cnt;
+    }
+
     void rollback() {
-        for (pair<int*, int> p : stk.back()) {
-            *p.first = p.second;
+        while (!stacks.back().empty()) {
+            *(stacks.back().back().first) = stacks.back().back().second;
+            stacks.back().pop_back();
         }
-        stk.pop_back();
-    }
-
-    int count() {
-        return n;
+        stacks.pop_back();
     }
 };
 
-struct SegmentTree {
-    int n, T;
-    vector<vector<edge>> seg;
-    DSU dsu;
-    vector<int> favor;
-
-    SegmentTree(int n, int T) : n(n), T(T), seg(4 * T), dsu(n), favor(T) {}
-
-    void add(int ql, int qr, edge e, int idx, int l, int r) {
-        if (r <= ql || qr <= l) return;
-        if (ql <= l && r <= qr) {
-            seg[idx].push_back(e);
-            return;
-        }
-        int m = (l + r) >> 1;
-        add(ql, qr, e, 2 * idx + 1, l, m);
-        add(ql, qr, e, 2 * idx + 2, m, r);
-    }
-
-    void dfs(int idx, int l, int r) {
-        for (edge e : seg[idx]) {
-            dsu.add(e);
-        }
-        if (l + 1 == r) {
-            favor[l] = dsu.count();
-        } else {
-            int m = (l + r) >> 1;
-            dfs(2 * idx + 1, l, m);
-            dfs(2 * idx + 2, m, r);
-        }
-        for (edge e : seg[idx]) {
-            dsu.rollback();
-        }
-    }
-
-    void add(int ql, int qr, edge e) { add(ql, qr, e, 0, 0, T); }
-    vector<int> work() { dfs(0, 0, T); return favor; }
-};
 
 int main() {
-    int n, m, q;
-    cin >> n >> m >> q;
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
 
-    map<edge, int> mp;
+    int n, m, T;
+    cin >> n >> m >> T;
+    T++;
+    OfflineDynamic<DSU, array<int, 2>, int, int> od(T);
 
+    map<array<int, 2>, int> mp;
     for (int i = 0; i < m; i++) {
         int u, v;
         cin >> u >> v;
@@ -97,29 +106,27 @@ int main() {
         mp[{u, v}] = 0;
     }
 
-    SegmentTree seg(n, q + 1);
-
-    for (int t = 1; t <= q; t++) {
+    for (int t = 1; t < T; t++) {
         int type, u, v;
         cin >> type >> u >> v;
-        u--;
-        v--;
+        u--; v--;
         if (u > v) swap(u, v);
-        if (mp.count({u, v})) {
-            seg.add(mp[{u, v}], t, {u, v});
-            mp.erase({u, v});
-        } else {
+        if (type == 1) {
             mp[{u, v}] = t;
+        } else {
+            od.add(mp[{u, v}], t, {u, v});
+            mp.erase({u, v});
         }
     }
 
-    for (pair<edge, int> p : mp) {
-        seg.add(p.second, q + 1, p.first);
+    for (auto [uv, t] : mp) {
+        auto [u, v] = uv;
+        od.add(t, T, {u, v});
     }
 
-    vector<int> answer = seg.work();
-    for (int t = 0; t <= q; t++) {
-        cout << answer[t] << ' ';
+    vector<int> res = od.work(DSU(n), vector<int>(T, 0));
+    for (int x : res) {
+        cout << x << ' ';
     }
     cout << '\n';
 }
