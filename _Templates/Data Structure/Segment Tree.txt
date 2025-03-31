@@ -1,17 +1,17 @@
 template<class Info>
 struct SegmentTree {
     int n;
-    std::vector<Info> info;
+    vector<Info> info;
     SegmentTree() : n(0) {}
     SegmentTree(int n_, Info v_ = Info()) {
         init(n_, v_);
     }
     template<class T>
-    SegmentTree(std::vector<T> init_) {
+    SegmentTree(vector<T> init_) {
         init(init_);
     }
     void init(int n_, Info v_ = Info()) {
-        init(std::vector(n_, v_));
+        init(vector<Info>(n_, v_));
     }
     template<class T>
     void init(std::vector<T> init_) {
@@ -104,5 +104,14 @@ struct SegmentTree {
     template<class F>
     int findLast(int l, int r, F &&pred) {
         return findLast(1, 0, n, l, r, pred);
+    }
+};
+ 
+struct Info {
+    int mx = -1e9;
+    Info() {}
+    Info(int x) : mx(x) {}
+    Info operator+(const Info &b) {
+        return {max(mx, b.mx)};
     }
 };
