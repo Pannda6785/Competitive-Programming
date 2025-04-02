@@ -1,0 +1,107 @@
+template <class Info, class Tag>
+struct ImplitcitLazySegmentTree {
+    struct Node {
+        Info info = Info();
+        Tag tag = Tag();
+        int ln = 0, rn = 0;
+    };
+ 
+    int n;
+    vector<Node> nodes;
+    Info def;
+ 
+    void newNode(int &aug, int l, int r) {
+        aug = nodes.size();
+        nodes.push_back(nodes[0]);
+        nodes.back().info = Info(l, r, def);
+    }
+ 
+    ImplitcitLazySegmentTree(int n, Info default_singleton = Info()) : n(n), def(default_singleton), nodes(1) {
+        int root;
+        newNode(root, 0, n);
+    }
+ 
+    void apply(int p, const Tag &t) {
+        nodes[p].info.apply(t);
+        nodes[p].tag.apply(t);
+    }
+    void pull(int p) {
+        nodes[p].info = nodes[nodes[p].ln].info + nodes[nodes[p].rn].info;
+    }
+    void push(int p) {
+        apply(nodes[p].ln, nodes[p].tag);
+        apply(nodes[p].rn, nodes[p].tag);
+        nodes[p].tag = Tag();
+    }
+ 
+    void rangeApply(int ql, int qr, const Tag &t) {
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            if (r <= ql || qr <= l) return;
+            if (ql <= l && r <= qr) return apply(p, t);
+            int m = (l + r) >> 1;
+            if (nodes[p].ln == 0) newNode(nodes[p].ln, l, m);
+            if (nodes[p].rn == 0) newNode(nodes[p].rn, m, r);
+            push(p);
+            self(self, nodes[p].ln, l, m);
+            self(self, nodes[p].rn, m, r);
+            pull(p);
+        };
+        dfs(dfs, 1, 0, n);
+    }
+ 
+    Info rangeQuery(int ql, int qr) {
+        Info res = Info();
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            if (r <= ql || qr <= l) return;
+            if (ql <= l && r <= qr) {
+                res = res + nodes[p].info;
+                return;
+            }
+            int m = (l + r) >> 1;
+            if (nodes[p].ln == 0) newNode(nodes[p].ln, l, m);
+            if (nodes[p].rn == 0) newNode(nodes[p].rn, m, r);
+            push(p);
+            self(self, nodes[p].ln, l, m);
+            self(self, nodes[p].rn, m, r);
+        };
+        dfs(dfs, 1, 0, n);
+        return res;
+    }
+ 
+    template <class F>
+    int findFirst(int ql, int qr, F &&pred) {
+        Info res = Info();
+        auto dfs = [&](auto self, int p, int l, int r) -> int {
+            if (r <= ql || qr <= l) return -1;
+            if (ql <= l && r <= qr && !pred(nodes[p].info)) return -1;
+            int m = (l + r) >> 1;
+            if (nodes[p].ln == 0) newNode(nodes[p].ln, l, m);
+            if (nodes[p].rn == 0) newNode(nodes[p].rn, m, r);
+            push(p);
+            int get = self(self, nodes[p].ln, l, m);
+            if (get == -1) get = self(self, nodes[p].rn, m, r);
+            return get;
+        };
+        return dfs(dfs, 1, 0, n);
+    }
+};
+ 
+struct Tag {
+    int add = 0;
+    void apply(const Tag &t) {
+        add += t.add;
+    }
+};
+ 
+struct Info {
+    int sum = 0;
+    Info() {}
+    Info(int sum) : sum(sum) {}
+    Info(int l, int r, const Info &def) {}
+    void apply(const Tag &t) {
+        sum += t.add;
+    }
+    Info operator+(const Info &b) const {
+        return {sum + b.sum};
+    }
+};
