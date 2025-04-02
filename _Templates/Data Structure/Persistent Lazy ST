@@ -1,0 +1,138 @@
+/* 
+for implicit behavior, please define the Info::makeDefault and use the domain-size-only constructor. 
+  do note that, to write custom functions then take care to realize (makeDefault) nodes that are currently identity before assessing them
+for explicit behavior, please specify the default elements (even if it is just identity). 
+  in this case, no need to define makeDefault (it won't be called, ever)
+*/
+
+template <class Info, class Tag>
+struct PersistentLazySegmentTree {
+    struct Node {
+        Info info = Info();
+        Tag tag = Tag();
+        int ln = 0, rn = 0;
+    };
+
+    int n;
+    vector<Node> nodes;
+
+    // implicit, if want default value, go modify the Info::makeDefault
+    PersistentLazySegmentTree(int n) : n(n), nodes(2) {
+        nodes[1].info.makeDefault(0, n);
+    }
+
+    // explicit
+    template <class T>
+    PersistentLazySegmentTree(int n, T def) {
+        init(vector<Info>(n, def));
+    }
+    template <class T>
+    PersistentLazySegmentTree(vector<T> a) {
+        init(a);
+    }
+    template <class T>
+    void init(vector<T> a) {
+        n = a.size();
+        nodes.resize(4 << __lg(n));
+        auto build = [&](auto self, int p, int l, int r) -> void {
+            if (r - l == 1) {
+                nodes[p].info = a[l];
+            } else {
+                int m = (l + r) >> 1;
+                nodes[p].ln = 2 * p;
+                nodes[p].rn = 2 * p + 1;
+                self(self, nodes[p].ln, l, m);
+                self(self, nodes[p].rn, m, r);
+                pull(p);
+            }
+        };
+        build(build, 1, 0, n);
+    }
+
+    void apply(int p, const Tag &t) {
+        nodes[p].info.apply(t);
+        nodes[p].tag.apply(t);
+    }
+    void pull(int p) {
+        nodes[p].info = nodes[nodes[p].ln].info + nodes[nodes[p].rn].info;
+    }
+    void push(int p) {
+        apply(nodes[p].ln, nodes[p].tag);
+        apply(nodes[p].rn, nodes[p].tag);
+        nodes[p].tag = Tag();
+    }
+    void newNode(int base, int &aug, int l, int r)  {
+        aug = nodes.size();
+        nodes.push_back(nodes[base]);
+        if (base == 0) nodes.back().info.makeDefault(l, r);
+    }
+
+    void rangeApply(int base, int &root, int ql, int qr, const Tag &t) {
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            if (r <= ql || qr <= l) return;
+            if (ql <= l && r <= qr) return apply(p, t);
+            int m = (l + r) >> 1;
+            newNode(nodes[p].ln, nodes[p].ln, l, m);
+            newNode(nodes[p].rn, nodes[p].rn, m, r);
+            push(p);
+            self(self, nodes[p].ln, l, m);
+            self(self, nodes[p].rn, m, r);
+            pull(p);
+        };
+        newNode(base, root, 0, n);
+        dfs(dfs, root, 0, n);
+    }
+
+    Info rangeQuery(int root, int ql, int qr) {
+        Info res = Info();
+        auto dfs = [&](auto self, int p, int l, int r, Tag t) -> void {
+            if (r <= ql || qr <= l) return;
+            if (ql <= l && r <= qr) {
+                Info info = nodes[p].info;
+                if (p == 0) info.makeDefault(l, r);
+                info.apply(t);
+                res = res + info;
+                return;
+            }
+            t.apply(nodes[p].tag);
+            int m = (l + r) >> 1;
+            self(self, nodes[p].ln, l, m, t);
+            self(self, nodes[p].rn, m, r, t);
+        };
+        dfs(dfs, root, 0, n, Tag());
+        return res;
+    }
+
+    template <class F>
+    int findFirst(int root, int ql, int qr, F &&pred) {
+        auto dfs = [&](auto self, int p, int l, int r, Tag t) -> int {
+            if (r <= ql || qr <= l) return -1;
+            Info info = nodes[p].info;
+            if (p == 0) info.makeDefault(l, r);
+            info.apply(t);
+            if (ql <= l && r <= qr && !pred(info)) return -1;
+            if (l + 1 == r) return l;
+            t.apply(nodes[p].tag);
+            int m = (l + r) >> 1;
+            int res = self(self, nodes[p].ln, l, m, t);
+            if (res == -1) res = self(self, nodes[p].rn, m, r, t);
+            return res;
+        };
+        return dfs(dfs, root, 0, n, Tag());
+    }
+};
+
+struct Tag {
+    void apply(const Tag &t) & {
+    }
+};
+
+struct Info {
+    void makeDefault(int l, int r) {
+    }
+    void apply(const Tag &t) & {
+    }
+    Info operator+(const Info &b) {
+        return {};
+    }
+};
