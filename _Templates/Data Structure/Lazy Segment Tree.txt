@@ -62,7 +62,8 @@ struct LazySegmentTree {
         }
         pull(p);
     }
-    void modify(int p, const Info &v) {
+    template<class T>
+    void modify(int p, const T &v) {
         modify(1, 0, n, p, v);
     }
     Info rangeQuery(int p, int l, int r, int x, int y) {
