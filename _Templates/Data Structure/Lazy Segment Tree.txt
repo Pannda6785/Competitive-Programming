@@ -47,7 +47,8 @@ struct LazySegmentTree {
         apply(2 * p + 1, tag[p]);
         tag[p] = Tag();
     }
-    void modify(int p, int l, int r, int x, const Info &v) {
+    template <class T>
+    void modify(int p, int l, int r, int x, const T &v) {
         if (r - l == 1) {
             info[p] = v;
             return;
