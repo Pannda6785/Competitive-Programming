@@ -67,6 +67,25 @@ struct PersistentLazySegmentTree {
         if (base == 0) nodes.back().info.makeDefault(l, r);
     }
 
+    template <class T>
+    void modify(int base, int &root, int i, const T &val) {
+        auto dfs = [&](auto self, int p, int l, int r) -> void {
+            if (l + 1 == r) {
+                nodes[p].info = val;
+                return;
+            }
+            int m = (l + r) >> 1;
+            newNode(nodes[p].ln, nodes[p].ln, l, m);
+            newNode(nodes[p].rn, nodes[p].rn, m, r);
+            push(p);
+            if (i < m) self(self, nodes[p].ln, l, m);
+            else self(self, nodes[p].rn, m, r);
+            pull(p);
+        };
+        newNode(base, root, 0, n);
+        dfs(dfs, root, 0, n);
+    }
+
     void rangeApply(int base, int &root, int ql, int qr, const Tag &t) {
         auto dfs = [&](auto self, int p, int l, int r) -> void {
             if (r <= ql || qr <= l) return;
