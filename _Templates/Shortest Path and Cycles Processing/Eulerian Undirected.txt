@@ -1,0 +1,46 @@
+/*
+undirected
+self-loop, multi-edges okay
+returns by vertices, is empty if not eulerian (or not connected)
+*/
+
+vector<int> eulerPath(int n, vector<array<int, 2>> edges) {
+    int m = edges.size();
+    vector<vector<array<int, 2>>> adj(n);
+    for (int i = 0; i < m; i++) {
+        auto [u, v] = edges[i];
+        adj[u].push_back({ v, i });
+        adj[v].push_back({ u, i });
+    }
+
+    vector<int> odds;
+    for (int u = 0; u < n; u++) {
+        if ((int)adj[u].size() % 2 == 1) {
+            odds.push_back(u);
+        }
+    }
+    if (odds.size() != 0 && odds.size() != 2) return {}; // not eulerian
+    int s = 0, t = 0;
+    if (odds.size() == 2) tie(s, t) = {odds[0], odds[1]};
+
+    vector<bool> used(m, false);
+    vector<int> key;
+
+    auto dfs = [&](auto self, int u) -> void {
+        while (!adj[u].empty()) {
+            auto [v, i] = adj[u].back();
+            adj[u].pop_back();
+            if (used[i]) continue;
+            used[i] = true;
+            self(self, v);
+            key.push_back(u);
+        }
+    };
+
+    dfs(dfs, s);
+    if ((int)key.size() != m) return {}; // not connected
+
+    reverse(key.begin(), key.end());
+    key.push_back(t);
+    return key;
+}
