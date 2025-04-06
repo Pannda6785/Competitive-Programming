@@ -1,4 +1,4 @@
-namespace sieges {
+namespace sieves {
     vector<int> getLink(int n) {
         vector<int> link(n, 0);
         for (int p = 2; p < n; p++) {
