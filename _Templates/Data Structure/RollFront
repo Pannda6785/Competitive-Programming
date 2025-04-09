@@ -1,0 +1,61 @@
+template <class DS, class E> // DS supports add(E), rollback() -> void. For any other (non-updating) queries, access the ds outside.
+struct RollFront {
+    DS *ds;
+    RollFront(DS &ds) : ds(&ds) {}
+
+    void add(E e) {
+        stk.push_back({e, 'B'});
+        ds->add(e);
+        cntB++;
+    }
+    void rollfront() {
+        assert(!stk.empty()); // size of stack is always the number of active updates
+        if (stk.back().second == 'A') {
+            stk.pop_back();
+            ds->rollback();
+            cntA--;
+            return;
+        }
+        if (cntA == 0) {
+            reverse();
+            rollfront();
+            return;
+        }
+        fix();
+        rollfront();
+    }
+
+private:
+    vector<pair<E, char>> stk; // (the update, A or B)
+    int cntA = 0, cntB = 0;
+
+    void fix() { // only called when cntA > 0 and stk.top is B
+        vector<E> Bs, As;
+        do {
+            (stk.back().second == 'A' ? As : Bs).push_back(stk.back().first);
+            stk.pop_back();
+            ds->rollback();
+        } while (As.size() < cntA && Bs.size() > As.size());
+        while (!Bs.empty()) {
+            stk.push_back({Bs.back(), 'B'});
+            ds->add(Bs.back());
+            Bs.pop_back();
+        }
+        while (!As.empty()) {
+            stk.push_back({As.back(), 'A'});
+            ds->add(As.back());
+            As.pop_back();
+        }
+    }
+    void reverse() { // only called when there are only B
+        swap(cntA, cntB);
+        std::reverse(stk.begin(), stk.end());
+        for (auto &[e, c] : stk) {
+            c = 'A';
+            ds->rollback();
+        }
+        for (auto &[e, c] : stk) {
+            ds->add(e);
+        }
+    }
+};
