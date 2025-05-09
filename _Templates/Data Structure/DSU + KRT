@@ -1,0 +1,63 @@
+struct DSU {
+    std::vector<int> f, siz;
+ 
+    DSU() {}
+    DSU(int n) {
+        init(n);
+    }
+ 
+    void init(int n) {
+        f.resize(n);
+        std::iota(f.begin(), f.end(), 0);
+        siz.assign(n, 1);
+    }
+ 
+    int find(int x) {
+        while (x != f[x]) {
+            x = f[x] = f[f[x]];
+        }
+        return x;
+    }
+ 
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+ 
+    bool merge(int x, int y) {
+        x = find(x);
+        y = find(y);
+        if (x == y) {
+            return false;
+        }
+        siz[x] += siz[y];
+        f[y] = x;
+        return true;
+    }
+ 
+    int size(int x) {
+        return siz[find(x)];
+    }
+};
+ 
+tuple<vector<vector<int>>, vector<int>, vector<int>> KRT(int n, vector<array<int, 3>> edges) {
+    vector<vector<int>> adj(n);
+    vector<int> label(n, -1);
+    vector<int> parent(n);
+ 
+    sort(edges.begin(), edges.end(), [&](auto x, auto y) { return x[2] < y[2]; });
+    DSU dsu(2 * n - 1);
+    for (auto [u, v, w] : edges) {
+        if (dsu.same(u, v)) continue;
+        int l = dsu.find(u);
+        int r = dsu.find(v);
+        parent[l] = parent[r] = n;
+        dsu.merge(n, l);
+        dsu.merge(n, r);
+        adj.push_back({l, r});
+        label.push_back(w);
+        parent.push_back(-1);
+        n++;
+    }
+ 
+    return {adj, label, parent};
+}
