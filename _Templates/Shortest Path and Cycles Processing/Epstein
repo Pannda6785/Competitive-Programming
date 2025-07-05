@@ -1,0 +1,128 @@
+/*
+    usage: pass in the problem input and use subscript epp[k] for kth (0-indexed) shhortest path, or -1 if no such path
+    + for max path, change min_heap from greater to less
+    + getPath(k) return the actual kth path by edges' id, it assumes k<K and that the path DOES exist
+*/
+
+template <class C>
+class Eppstein {
+    template <typename T> using min_heap = priority_queue<T, vector<T>, greater<T>>;
+
+public:
+    struct Edge {
+        int u, v;
+        C w;
+    };
+
+    Eppstein(int N, const vector<Edge> &edges, int S, int T, int K) : N(N), edges(edges), S(S), T(T), K(K), par(N, -1) {
+        solve();
+    }
+
+    C operator[](int i) const {
+        return res[i];
+    }
+
+    vector<int> getPath(int k) {
+        assert(k < trace.size());
+        vector<int> dev;
+        while (k != 0) {
+            dev.push_back(trace[k][1]);
+            k = trace[k][0];
+        }
+        vector<int> path;
+        int u = S;
+        while (u != T || !dev.empty()) {
+            if (!dev.empty() && edges[dev.back()].u == u) {
+                path.push_back(dev.back());
+                u = edges[dev.back()].v;
+                dev.pop_back();
+            } else {
+                path.push_back(par[u]);
+                u = edges[par[u]].v;
+            }
+        }
+        return path;
+    }
+
+private:
+    struct Node {
+        int id, v, h;
+        C w;
+        Node *ls, *rs;
+        Node(int id, int v, C w) : id(id), v(v), h(1), w(w), ls(nullptr), rs(nullptr) {}
+    };
+
+    Node* merge(Node* u, Node* v) {
+        if (!u) return v;
+        if (!v) return u;
+        if (u->w > v->w) swap(u, v);
+        Node* p = new Node(*u);
+        p->rs = merge(u->rs, v);
+        if (p->rs && (!p->ls || p->ls->h < p->rs->h)) swap(p->ls, p->rs);
+        p->h = (p->rs ? p->rs->h : 0) + 1;
+        return p;
+    }
+
+    int N;
+    vector<Edge> edges;
+    int S, T, K;
+
+    vector<int> par;
+    vector<C> res;
+    vector<array<int, 2>> trace;
+
+    void solve() {
+        vector<vector<int>> G(N);
+        for (int i = 0; i < edges.size(); ++i) {
+            G[edges[i].v].push_back(i);
+        }
+        min_heap<pair<C, int>> pq;
+        vector<C> d(N, -1);
+        vector<int> done(N), p;
+        pq.emplace(d[T] = 0, T);
+        while (!pq.empty()) {
+            int u = pq.top().second; pq.pop();
+            if (done[u]) continue;
+            p.push_back(u);
+            done[u] = 1;
+            for (int i : G[u]) {
+                auto [v, _u, w] = edges[i];
+                if (d[v] == -1 || d[v] > d[u] + w) {
+                    par[v] = i;
+                    pq.emplace(d[v] = d[u] + w, v);
+                }
+            }
+        }
+        if (d[S] == -1) {
+            res = vector<C>(K, -1);
+            return;
+        }
+
+        vector<Node*> heap(N);
+        for (int i = 0; i < edges.size(); ++i) {
+            auto [u, v, w] = edges[i];
+            if (~d[u] && ~d[v] && par[u] != i)
+                heap[u] = merge(heap[u], new Node(i, v, d[v] + w - d[u]));
+        }
+        for (int u : p) {
+            if (u != T)
+                heap[u] = merge(heap[u], heap[edges[par[u]].v]);
+        }
+
+        min_heap<tuple<C, int, Node*>> q;
+        if (heap[S]) q.emplace(d[S] + heap[S]->w, 0, heap[S]);
+        res = {d[S]};
+        trace = {{-1, -1}};
+        for (int i = 1; i < K && !q.empty(); ++i) {
+            auto [w, source, node] = q.top(); q.pop();
+            res.push_back(w);
+            trace.push_back({source, node->id});
+            if (heap[node->v])
+                q.emplace(w + heap[node->v]->w, i, heap[node->v]);
+            for (Node* s : {node->ls, node->rs})
+                if (s) q.emplace(w + s->w - node->w, source, s);
+        }
+
+        res.resize(K, -1);
+    }
+};
