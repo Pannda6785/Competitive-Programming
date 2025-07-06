@@ -1,6 +1,6 @@
 /*
     usage: pass in the problem input and use subscript epp[k] for kth (0-indexed) shhortest path, or -1 if no such path
-    + for max path, change min_heap from greater to less
+    + for max path: 1) change min_heap to max heap; 2) replace dijkstra with something that find maximum path (ex DAG); 3) change the comparator in Node merge
     + getPath(k) return the actual kth path by edges' id, it assumes k<K and that the path DOES exist
 */
 
