@@ -15,7 +15,7 @@ struct TwoSAT {
         return x + n;
     }
 
-    void addClause(int x, int y) {
+    void add(int x, int y) {
         x += n;
         y += n;
         adj[neg(x)].push_back(y);
