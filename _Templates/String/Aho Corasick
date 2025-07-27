@@ -1,0 +1,82 @@
+/**
+ * Author: Ann
+ * Description: Root is 0. Integers starting from 0 is used for the alphabet. After adding all strings, call build().
+ link() returns the node corresponding to the longest proper suffix. 
+ go() suppose the node is extended with some character, then returns the suffix link.
+ Customization: if alphabet size is big, replace array<> with map<>. The adding is the same as trie, so it's easy to understand.
+ */
+
+template <int C>
+struct AhoCorasick {
+    struct Node {
+        int p, c, link = 0;
+        array<int, C> next, go;
+        Node(int p = -1, int c = -1) : p(p), c(c) {
+            fill(next.begin(), next.end(), 0);
+            fill(go.begin(), go.end(), 0);
+        }
+    };
+
+    vector<Node> trie;
+    AhoCorasick() : trie(1) {}
+
+    int add(vector<int> s) {
+        int u = 0;
+        for (int c : s) {
+            if (!trie[u].next[c]) {
+                trie[u].next[c] = trie.size();
+                trie.emplace_back(u, c);
+            }
+            u = trie[u].next[c];
+        }
+        return u;
+    }
+
+    void build() {
+        int n = trie.size();
+        vector<int> q(n);
+        int cur = 0;
+        q[cur++] = 0;
+        for (int i = 0; i < n; i++) {
+            int u = q[i];
+            trie[u].link = u == 0 || trie[u].p == 0 ? 0 : trie[trie[trie[u].p].link].go[trie[u].c];
+            for (int c = 0; c < C; c++) {
+                trie[u].go[c] = trie[u].next[c] ? trie[u].next[c] : u == 0 ? 0 : trie[trie[u].link].go[c];
+                if (trie[u].next[c]) {
+                    q[cur++] = trie[u].next[c];
+                }
+            }
+        }
+    }
+
+   int size() { return trie.size(); }
+   int link(int u) { return trie[u].link; }
+   int go(int u, int c) { return trie[u].go[c]; }
+};
+
+//template <int C>
+//struct AhoCorasickContainer {
+//    vector<vector<vector<int>>> sss;
+//    vector<AhoCorasick<C>> ahos;
+//    int status;
+//    AhoCorasickContainer(int LOG) : sss(LOG), ahos(LOG), status(0) {}
+//
+//    void add(vector<vector<int>> ss, int i) {
+//        if (status >> i & 1) {
+//            ss.insert(ss.end(), sss[i].begin(), sss[i].end());
+//            sss[i].clear();
+//            ahos[i] = AhoCorasick<C>();
+//            status ^= 1 << i;
+//            add(ss, i + 1);
+//        } else {
+//            ahos[i].add(ss);
+//            ahos[i].build();
+//            sss[i] = ss;
+//            status ^= 1 << i;
+//        }
+//    }
+//
+//    void add(vector<int> s) {
+//        add({s}, 0);
+//    }
+//};
