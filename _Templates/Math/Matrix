@@ -1,0 +1,87 @@
+template <class T>
+struct Matrix {
+    int n, m;
+    vector<vector<T>> a;
+
+    Matrix(int n, int m, T val = T(0)) : n(n), m(m), a(n, vector<T>(m, val)) {}
+
+    vector<T>& operator[](int i) { return a[i]; }
+    const vector<T>& operator[](int i) const { return a[i]; }
+
+    static Matrix I(int n) {
+        Matrix res(n, n, T(0));
+        for (int i = 0; i < n; i++) {
+            res[i][i] = T(1);
+        }
+        return res;
+    }
+
+    Matrix operator*(const Matrix &b) const {
+        assert(m == b.n);
+        Matrix res(n, b.m, T(0));
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < m; k++) {
+                for (int j = 0; j < b.m; j++) {
+                    res[i][j] = res[i][j] + a[i][k] * b[k][j];
+                }
+            }
+        }
+        return res;
+    }
+
+    Matrix operator+(const Matrix &b) const {
+        assert(n == b.n && m == b.m);
+        Matrix res(n, m);
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < m; ++j)
+                res.a[i][j] = a[i][j] + b.a[i][j];
+        return res;
+    }
+
+    Matrix operator-(const Matrix &b) const {
+        assert(n == b.n && m == b.m);
+        Matrix res(n, m);
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < m; ++j)
+                res.a[i][j] = a[i][j] - b.a[i][j];
+        return res;
+    }
+
+     Matrix operator^(long long b) const {
+        Matrix a = *this;
+        assert(a.n == a.m);
+        Matrix res = I(a.n);
+        for (; b; b >>= 1, a = a * a) {
+            if (b & 1) {
+                res = res * a;
+            }
+        }
+        return res;
+    }
+
+    Matrix operator*(const T &scalar) const {
+        Matrix res(n, m);
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < m; ++j)
+                res.a[i][j] = a[i][j] * scalar;
+        return res;
+    }
+
+    friend Matrix operator*(const T &scalar, const Matrix &mat) {
+        Matrix res(mat.n, mat.m);
+        for (int i = 0; i < mat.n; ++i)
+            for (int j = 0; j < mat.m; ++j)
+                res.a[i][j] = scalar * mat.a[i][j];
+        return res;
+    }
+
+    friend ostream& operator<<(ostream& os, const Matrix& mat) {
+        for (int i = 0; i < mat.n; i++) {
+            for (int j = 0; j < mat.m; j++) {
+                os << mat[i][j] << ' ';
+            }
+            os << '\n';
+        }
+        return os;
+    }
+};
