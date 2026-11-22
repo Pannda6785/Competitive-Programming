@@ -1,3 +1,4 @@
+
 /* 
 for implicit behavior, please define the Info::makeDefault and use the domain-size-only constructor. 
   do note that, to write custom functions then take care to realize (makeDefault) nodes that are currently identity before assessing them
@@ -113,10 +114,11 @@ struct PersistentLazySegmentTree {
                 res = res + info;
                 return;
             }
-            t.apply(nodes[p].tag);
+            Tag nt = nodes[p].tag;
+            nt.apply(t);
             int m = (l + r) >> 1;
-            self(self, nodes[p].ln, l, m, t);
-            self(self, nodes[p].rn, m, r, t);
+            int res = self(self, nodes[p].ln, l, m, nt);
+            if (res == -1) res = self(self, nodes[p].rn, m, r, nt);
         };
         dfs(dfs, root, 0, n, Tag());
         return res;
@@ -131,10 +133,11 @@ struct PersistentLazySegmentTree {
             info.apply(t);
             if (ql <= l && r <= qr && !pred(info)) return -1;
             if (l + 1 == r) return l;
-            t.apply(nodes[p].tag);
+            Tag nt = nodes[p].tag;
+            nt.apply(t);
             int m = (l + r) >> 1;
-            int res = self(self, nodes[p].ln, l, m, t);
-            if (res == -1) res = self(self, nodes[p].rn, m, r, t);
+            int res = self(self, nodes[p].ln, l, m, nt);
+            if (res == -1) res = self(self, nodes[p].rn, m, r, nt);
             return res;
         };
         return dfs(dfs, root, 0, n, Tag());
